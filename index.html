@@ -1,0 +1,3105 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Recrear Cualquier Software con IA by Rubén Sbarsky — V001</title>
+  <style>
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-card: #0f172a;
+      --bg-highlight: #1e3a5f;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --accent: #38bdf8;
+      --accent-alt: #00d4ff;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --border-color: #1e3a5f;
+      --code-bg: #050811;
+      --font-scale: 1;
+      --nav-height: 58px;
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-highlight: #e0f2fe;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --accent: #0284c7;
+      --accent-alt: #0369a1;
+      --accent-emerald: #059669;
+      --accent-amber: #d97706;
+      --accent-rose: #e11d48;
+      --border-color: #cbd5e1;
+      --code-bg: #f1f5f9;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: calc(16px * var(--font-scale));
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.65;
+      overflow-x: hidden;
+      padding-top: calc(var(--nav-height) + 4px);
+      padding-bottom: 90px;
+      min-height: 100vh;
+    }
+
+    /* Barra de progreso de lectura */
+    #reading-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-emerald));
+      width: 0%;
+      z-index: 100;
+      transition: width 0.15s ease-out;
+    }
+
+    /* Barra de navegación fija superior */
+    nav#top-nav {
+      position: fixed;
+      top: 4px;
+      left: 0;
+      right: 0;
+      height: var(--nav-height);
+      background-color: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      overflow-x: auto;
+      white-space: nowrap;
+      z-index: 40;
+      scrollbar-width: thin;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    nav#top-nav::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    nav#top-nav::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border-color);
+      background: rgba(30, 58, 95, 0.25);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+      text-decoration: none;
+      user-select: none;
+    }
+
+    .chip:hover, .chip:focus-visible {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.15);
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .chip.active {
+      background: var(--accent);
+      color: #0a0e1a;
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+
+    #mb {
+      background: var(--bg-highlight);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* Panel lateral Índice (#dr) según especificación exacta */
+    #dr {
+      position: fixed;
+      top: calc(var(--nav-height) + 4px);
+      left: 0;
+      bottom: 0;
+      width: min(330px, 88vw);
+      background: #0f172a;
+      border-right: 1px solid #1e3a5f;
+      transform: translateX(-105%);
+      transition: .25s;
+      z-index: 35;
+      overflow: auto;
+      padding: 10px;
+      box-shadow: 6px 0 24px rgba(0, 0, 0, 0.6);
+    }
+
+    #dr.o {
+      transform: none;
+    }
+
+    #dr a {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border-radius: 8px;
+      color: #e2e8f0;
+      cursor: pointer;
+      min-height: 44px;
+      font-size: 0.92rem;
+      font-weight: 500;
+      text-decoration: none;
+      margin-bottom: 4px;
+      border: 1px solid transparent;
+    }
+
+    #dr a:hover, #dr a:focus-visible {
+      background: #ffffff0d;
+      border-color: #38bdf844;
+      outline: none;
+    }
+
+    #dr a.on {
+      background: #00d4ff22;
+      color: #00d4ff;
+      font-weight: 700;
+      border-color: #00d4ff55;
+    }
+
+    /* Barra de herramientas secundaria compacta */
+    .utility-bar {
+      max-width: 1120px;
+      margin: 12px auto 0;
+      padding: 8px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      width: calc(100% - 20px);
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1 1 200px;
+    }
+
+    .search-box input {
+      width: 100%;
+      min-height: 40px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+    }
+
+    .utility-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .btn-tool {
+      min-height: 40px;
+      min-width: 40px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .btn-tool:hover, .btn-tool:focus-visible {
+      border-color: var(--accent);
+      color: var(--accent);
+      outline: none;
+    }
+
+    /* Contenedor Principal */
+    main {
+      max-width: 1120px;
+      margin: 14px auto;
+      padding: 0 10px;
+    }
+
+    section.tab-panel {
+      display: none;
+      animation: fadeIn 0.22s ease-out;
+    }
+
+    section.tab-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Tipografía y Tarjetas */
+    h1 {
+      font-size: clamp(1.55rem, 4.5vw, 2.35rem);
+      line-height: 1.25;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      font-weight: 800;
+    }
+
+    h2 {
+      font-size: clamp(1.35rem, 3.8vw, 1.85rem);
+      color: var(--accent);
+      margin: 20px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    h3 {
+      font-size: clamp(1.12rem, 3vw, 1.35rem);
+      color: var(--text-primary);
+      margin: 18px 0 8px;
+    }
+
+    h4 {
+      font-size: 1.02rem;
+      color: var(--accent);
+      margin: 14px 0 6px;
+    }
+
+    p {
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+
+    ul, ol {
+      margin: 0 0 14px 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 14px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+
+    .badge.emerald {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .badge.amber {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-amber);
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .badge.rose {
+      background: rgba(244, 63, 94, 0.15);
+      color: var(--accent-rose);
+      border-color: rgba(244, 63, 94, 0.35);
+    }
+
+    /* Matriz Pedagógica Qué / Para qué / Por qué / Cómo */
+    .pedagogy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px;
+      margin: 14px 0;
+    }
+
+    .pedagogy-item {
+      background: rgba(30, 58, 95, 0.22);
+      border-left: 4px solid var(--accent);
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .pedagogy-item strong {
+      display: block;
+      color: var(--accent);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+
+    /* Contenedor SVG 4:5 */
+    .svg-hero-wrapper {
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto 18px;
+      aspect-ratio: 4 / 5;
+      background: radial-gradient(circle at 50% 35%, #13284c 0%, #070b14 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 8px 28px rgba(0, 212, 255, 0.15);
+    }
+
+    .svg-mount {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .svg-controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    /* Bloques de código y prompts copiables */
+    .copy-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      margin: 12px 0;
+      overflow: hidden;
+    }
+
+    .copy-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(30, 58, 95, 0.35);
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-copy {
+      min-height: 36px;
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--accent);
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-copy:hover {
+      background: var(--accent);
+      color: #0a0e1a;
+    }
+
+    .copy-content {
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.88rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--text-primary);
+      overflow-x: auto;
+    }
+
+    /* Enlaces URL con botón obligatorio "Abrir enlace en nueva ventana" */
+    .url-card {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+      margin: 10px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .url-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      color: var(--accent);
+      word-break: break-all;
+      background: var(--code-bg);
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .url-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn-open-url {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #0a0e1a;
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: filter 0.2s;
+    }
+
+    .btn-open-url:hover {
+      filter: brightness(1.1);
+    }
+
+    /* Tablas Responsivas */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin: 14px 0;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 300px;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--bg-highlight);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Desplegables / Acordeones */
+    details.qa-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    details.qa-item summary {
+      padding: 12px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 46px;
+      background: rgba(30, 58, 95, 0.18);
+    }
+
+    details.qa-item summary::-webkit-details-marker {
+      display: none;
+    }
+
+    details.qa-item summary::after {
+      content: "＋";
+      color: var(--accent);
+      font-weight: 800;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    details.qa-item[open] summary::after {
+      content: "－";
+    }
+
+    details.qa-item .qa-body {
+      padding: 14px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* Listas de comprobación interactivas */
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(30, 58, 95, 0.15);
+      margin-bottom: 8px;
+      cursor: pointer;
+      min-height: 44px;
+    }
+
+    .checklist-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+      accent-color: var(--accent-emerald);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    /* Navegación Anterior / Siguiente al final de cada pestaña */
+    .tab-footer-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 24px;
+      padding: 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      position: sticky;
+      bottom: 10px;
+      z-index: 20;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+    }
+
+    .btn-step-nav {
+      min-height: 44px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--accent);
+      background: var(--bg-highlight);
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1 1 45%;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .btn-step-nav:hover:not(:disabled) {
+      background: var(--accent);
+      color: #0a0e1a;
+    }
+
+    .btn-step-nav:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      border-color: var(--border-color);
+    }
+
+    /* Botones Flotantes Arrastrables (INICIO y ARRIBA) */
+    .floating-draggable {
+      position: fixed;
+      z-index: 50;
+      min-height: 46px;
+      min-width: 88px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #0f172a, #1e3a5f);
+      border: 2px solid var(--accent);
+      color: var(--text-primary);
+      font-weight: 800;
+      font-size: 0.8rem;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.65);
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .floating-draggable:active {
+      cursor: grabbing;
+      border-color: var(--accent-emerald);
+    }
+
+    #float-home {
+      right: 12px;
+      bottom: 132px;
+    }
+
+    #float-top {
+      right: 12px;
+      bottom: 76px;
+    }
+
+    /* Pestaña Créditos Destacada */
+    .credits-author-box {
+      text-align: center;
+      padding: 24px 16px;
+      background: linear-gradient(180deg, rgba(30, 58, 95, 0.35) 0%, rgba(15, 23, 42, 0.9) 100%);
+      border: 2px solid var(--accent);
+      border-radius: 16px;
+      margin: 18px 0;
+    }
+
+    .credits-author-name {
+      font-size: clamp(2rem, 6vw, 3.2rem);
+      font-weight: 900;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+      margin-bottom: 4px;
+    }
+
+    .credits-author-role {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    /* Animaciones SVG y soporte prefers-reduced-motion */
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.55; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.06); }
+    }
+    @keyframes rotateSlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes rotateReverse {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+    @keyframes scanBeam {
+      0% { transform: translateY(0px); opacity: 0.2; }
+      50% { transform: translateY(155px); opacity: 0.85; }
+      100% { transform: translateY(0px); opacity: 0.2; }
+    }
+    @keyframes flowDash {
+      to { stroke-dashoffset: -48; }
+    }
+    @keyframes floatNode {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .svg-anim-spin {
+      transform-origin: 200px 250px;
+      animation: rotateSlow 22s linear infinite;
+    }
+    .svg-anim-spin-rev {
+      transform-origin: 200px 250px;
+      animation: rotateReverse 16s linear infinite;
+    }
+    .svg-anim-scan {
+      animation: scanBeam 4.5s ease-in-out infinite;
+    }
+    .svg-anim-flow {
+      stroke-dasharray: 8 6;
+      animation: flowDash 1.6s linear infinite;
+    }
+    .svg-anim-pulse {
+      transform-origin: center;
+      animation: pulseGlow 3s ease-in-out infinite;
+    }
+    .svg-anim-float {
+      animation: floatNode 3.6s ease-in-out infinite;
+    }
+
+    .svg-paused * {
+      animation-play-state: paused !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .svg-anim-spin, .svg-anim-spin-rev, .svg-anim-scan, .svg-anim-flow, .svg-anim-pulse, .svg-anim-float {
+        animation: none !important;
+      }
+    }
+
+    /* Optimización Samsung Galaxy A02s (360px ancho) */
+    @media (max-width: 400px) {
+      body {
+        padding-left: 0;
+        padding-right: 0;
+      }
+      main {
+        padding: 0 8px;
+      }
+      .card {
+        padding: 12px;
+      }
+      .chip {
+        padding: 6px 11px;
+        font-size: 0.82rem;
+      }
+      .tab-footer-nav {
+        padding: 10px;
+        gap: 6px;
+      }
+      .btn-step-nav {
+        font-size: 0.8rem;
+        padding: 8px 8px;
+      }
+    }
+
+    /* Hoja de estilos de Impresión A4 */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 14mm 12mm;
+      }
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        padding: 0 !important;
+        font-size: 10.5pt !important;
+      }
+      nav#top-nav, #dr, .utility-bar, .floating-draggable, .tab-footer-nav, .svg-controls, #reading-progress {
+        display: none !important;
+      }
+      section.tab-panel {
+        display: block !important;
+        page-break-after: auto;
+        margin-bottom: 18px;
+      }
+      .card, details.qa-item, .copy-block, .url-card {
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #888888 !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+      }
+      h1, h2, h3, h4, p, li, td, th, summary, .copy-content {
+        color: #000000 !important;
+      }
+      .svg-hero-wrapper {
+        max-width: 240px !important;
+        border: 1px solid #000 !important;
+        background: #f8fafc !important;
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra de progreso superior -->
+  <div id="reading-progress" role="progressbar" aria-label="Progreso de lectura"></div>
+
+  <!-- Barra de navegación superior fija con botón Índice primero -->
+  <nav id="top-nav" aria-label="Navegación principal del tutorial">
+    <button class="chip" id="mb" aria-label="Abrir índice" aria-expanded="false">☰ Índice</button>
+    <button class="chip active" data-tab="0">INICIO</button>
+    <button class="chip" data-tab="1">CONCEPTOS Y ARQUITECTURA</button>
+    <button class="chip" data-tab="2">INSTALACIÓN Y AGENTES IA</button>
+    <button class="chip" data-tab="3">INTERFACES Y 4 FASES</button>
+    <button class="chip" data-tab="4">PROCEDIMIENTOS PASO A PASO</button>
+    <button class="chip" data-tab="5">MODO PROFUNDO Y CLI / MCP</button>
+    <button class="chip" data-tab="6">PRÁCTICA: PROYECTO KANBAN</button>
+    <button class="chip" data-tab="7">PROMPTS</button>
+    <button class="chip" data-tab="8">33 Preguntas (Q&amp;A)</button>
+    <button class="chip" data-tab="9">ERRORES Y SEGURIDAD</button>
+    <button class="chip" data-tab="10">RESUMEN Y GLOSARIO</button>
+    <button class="chip" data-tab="11">FUENTES</button>
+    <button class="chip" data-tab="12">CRÉDITOS</button>
+  </nav>
+
+  <!-- Panel lateral Índice (#dr) -->
+  <div id="dr" role="navigation" aria-label="Índice completo de secciones"></div>
+
+  <!-- Fuente SVG única oculta (será extraída y eliminada del DOM al iniciar) -->
+  <div id="svg-template-source" style="display:none;" aria-hidden="true">
+    <svg viewBox="0 0 400 500" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustración animada de Craft Anything: inspección Clean-Room de software, motor Rust con 320 herramientas, ciclo Study-Build-Check-Ready y generación multi-pantalla">
+      <defs>
+        <linearGradient id="__PREFIX__bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#070b16"/>
+          <stop offset="50%" stop-color="#0f1f38"/>
+          <stop offset="100%" stop-color="#06101e"/>
+        </linearGradient>
+        <linearGradient id="__PREFIX__cyanGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.1"/>
+          <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.95"/>
+          <stop offset="100%" stop-color="#10b981" stop-opacity="0.1"/>
+        </linearGradient>
+        <linearGradient id="__PREFIX__coreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#38bdf8"/>
+          <stop offset="50%" stop-color="#0284c7"/>
+          <stop offset="100%" stop-color="#10b981"/>
+        </linearGradient>
+        <radialGradient id="__PREFIX__aura" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.42"/>
+          <stop offset="70%" stop-color="#1e3a5f" stop-opacity="0.12"/>
+          <stop offset="100%" stop-color="#0a0e1a" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- Fondo 4:5 con cuadrícula técnica -->
+      <rect width="400" height="500" fill="url(#__PREFIX__bgGrad)"/>
+      <g stroke="#1e3a5f" stroke-width="0.6" opacity="0.45">
+        <line x1="0" y1="50" x2="400" y2="50"/><line x1="0" y1="100" x2="400" y2="100"/>
+        <line x1="0" y1="150" x2="400" y2="150"/><line x1="0" y1="200" x2="400" y2="200"/>
+        <line x1="0" y1="250" x2="400" y2="250"/><line x1="0" y1="300" x2="400" y2="300"/>
+        <line x1="0" y1="350" x2="400" y2="350"/><line x1="0" y1="400" x2="400" y2="400"/>
+        <line x1="0" y1="450" x2="400" y2="450"/>
+        <line x1="50" y1="0" x2="50" y2="500"/><line x1="100" y1="0" x2="100" y2="500"/>
+        <line x1="150" y1="0" x2="150" y2="500"/><line x1="200" y1="0" x2="200" y2="500"/>
+        <line x1="250" y1="0" x2="250" y2="500"/><line x1="300" y1="0" x2="300" y2="500"/>
+        <line x1="350" y1="0" x2="350" y2="500"/>
+      </g>
+
+      <!-- Aura central -->
+      <circle cx="200" cy="250" r="145" fill="url(#__PREFIX__aura)" class="svg-anim-pulse"/>
+
+      <!-- CAPA SUPERIOR: Software Objetivo inspeccionado en Sala Limpia (Clean-Room) -->
+      <g class="svg-anim-float">
+        <rect x="42" y="22" width="316" height="125" rx="10" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+        <rect x="42" y="22" width="316" height="22" rx="10" fill="#1e3a5f"/>
+        <circle cx="56" cy="33" r="4" fill="#f43f5e"/>
+        <circle cx="68" cy="33" r="4" fill="#f59e0b"/>
+        <circle cx="80" cy="33" r="4" fill="#10b981"/>
+        <text x="96" y="37" fill="#e2e8f0" font-size="9" font-family="monospace" font-weight="bold">CLEAN-ROOM INSPECTOR :: DOM &amp; PIXELS</text>
+
+        <!-- Elementos UI analizados -->
+        <rect x="56" y="54" width="90" height="48" rx="5" fill="#1e293b" stroke="#38bdf8" stroke-dasharray="3 2"/>
+        <text x="64" y="75" fill="#38bdf8" font-size="8" font-family="monospace">DOM Tree</text>
+        <text x="64" y="88" fill="#94a3b8" font-size="7.5" font-family="monospace">#0F172A | 16px</text>
+
+        <rect x="156" y="54" width="92" height="48" rx="5" fill="#1e293b" stroke="#10b981" stroke-dasharray="3 2"/>
+        <text x="164" y="75" fill="#10b981" font-size="8" font-family="monospace">375 | 768 | 1440</text>
+        <text x="164" y="88" fill="#94a3b8" font-size="7.5" font-family="monospace">capture/ ready</text>
+
+        <rect x="258" y="54" width="86" height="48" rx="5" fill="#1e293b" stroke="#f59e0b" stroke-dasharray="3 2"/>
+        <text x="266" y="75" fill="#f59e0b" font-size="8" font-family="monospace">Deep: Ghidra</text>
+        <text x="266" y="88" fill="#94a3b8" font-size="7.5" font-family="monospace">Pseudo-C / AST</text>
+
+        <rect x="56" y="110" width="288" height="24" rx="4" fill="#091326" stroke="#1e3a5f"/>
+        <text x="66" y="125" fill="#00d4ff" font-size="8.5" font-family="monospace">investigation.cany → 100% Hechos Empíricos Verificados</text>
+      </g>
+
+      <!-- Haz de escaneo láser animado -->
+      <rect x="36" y="24" width="328" height="4" fill="url(#__PREFIX__cyanGlow)" class="svg-anim-scan"/>
+
+      <!-- Líneas de flujo de datos desde captura hacia motor Rust -->
+      <path d="M 100 147 L 165 210" stroke="#38bdf8" stroke-width="2" fill="none" class="svg-anim-flow"/>
+      <path d="M 200 147 L 200 200" stroke="#10b981" stroke-width="2.5" fill="none" class="svg-anim-flow"/>
+      <path d="M 300 147 L 235 210" stroke="#f59e0b" stroke-width="2" fill="none" class="svg-anim-flow"/>
+
+      <!-- CAPA CENTRAL: Motor Rust + 320 Herramientas + Ciclo 4 Fases -->
+      <g class="svg-anim-spin">
+        <circle cx="200" cy="250" r="78" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="12 8" opacity="0.7"/>
+        <circle cx="200" cy="172" r="5" fill="#38bdf8"/>
+        <circle cx="278" cy="250" r="5" fill="#10b981"/>
+        <circle cx="200" cy="328" r="5" fill="#f59e0b"/>
+        <circle cx="122" cy="250" r="5" fill="#00d4ff"/>
+      </g>
+
+      <g class="svg-anim-spin-rev">
+        <polygon points="200,185 256,217 256,283 200,315 144,283 144,217" fill="none" stroke="#10b981" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.8"/>
+      </g>
+
+      <!-- Núcleo Hexagonal Fijo -->
+      <polygon points="200,196 246,223 246,277 200,304 154,277 154,223" fill="url(#__PREFIX__coreGrad)" stroke="#e2e8f0" stroke-width="2"/>
+      <text x="200" y="242" text-anchor="middle" fill="#0a0e1a" font-size="11" font-family="sans-serif" font-weight="900">CRAFT ANY</text>
+      <text x="200" y="256" text-anchor="middle" fill="#0a0e1a" font-size="9.5" font-family="monospace" font-weight="bold">RUST CORE</text>
+      <text x="200" y="270" text-anchor="middle" fill="#07111e" font-size="8.5" font-family="monospace" font-weight="bold">320 TOOLS</text>
+
+      <!-- Nodos de las 4 Fases y Agentes -->
+      <g font-family="monospace" font-size="8.5" font-weight="bold">
+        <rect x="18" y="198" width="84" height="26" rx="6" fill="#0f172a" stroke="#38bdf8"/>
+        <text x="60" y="214" text-anchor="middle" fill="#38bdf8">1. STUDY</text>
+
+        <rect x="298" y="198" width="84" height="26" rx="6" fill="#0f172a" stroke="#10b981"/>
+        <text x="340" y="214" text-anchor="middle" fill="#10b981">2. BUILD</text>
+
+        <rect x="18" y="276" width="84" height="26" rx="6" fill="#0f172a" stroke="#f59e0b"/>
+        <text x="60" y="292" text-anchor="middle" fill="#f59e0b">3. CHECK</text>
+
+        <rect x="298" y="276" width="84" height="26" rx="6" fill="#0f172a" stroke="#00d4ff"/>
+        <text x="340" y="292" text-anchor="middle" fill="#00d4ff">4. READY</text>
+      </g>
+
+      <!-- Líneas de salida hacia la síntesis en 3 resoluciones -->
+      <path d="M 165 292 L 90 362" stroke="#00d4ff" stroke-width="2" fill="none" class="svg-anim-flow"/>
+      <path d="M 200 304 L 200 362" stroke="#10b981" stroke-width="2.5" fill="none" class="svg-anim-flow"/>
+      <path d="M 235 292 L 310 362" stroke="#38bdf8" stroke-width="2" fill="none" class="svg-anim-flow"/>
+
+      <!-- CAPA INFERIOR: Síntesis Verificada en 3 Resoluciones (375px, 768px, 1440px) -->
+      <!-- Móvil 375px -->
+      <g class="svg-anim-float">
+        <rect x="34" y="364" width="76" height="106" rx="8" fill="#0f172a" stroke="#00d4ff" stroke-width="1.5"/>
+        <rect x="42" y="376" width="60" height="10" rx="2" fill="#1e3a5f"/>
+        <rect x="42" y="392" width="60" height="28" rx="3" fill="#0284c7" opacity="0.45"/>
+        <rect x="42" y="426" width="60" height="24" rx="3" fill="#10b981" opacity="0.45"/>
+        <text x="72" y="463" text-anchor="middle" fill="#e2e8f0" font-size="8" font-family="monospace">375px Móvil</text>
+      </g>
+
+      <!-- Tableta 768px -->
+      <g class="svg-anim-float">
+        <rect x="130" y="364" width="114" height="106" rx="8" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/>
+        <rect x="138" y="376" width="98" height="12" rx="2" fill="#1e3a5f"/>
+        <rect x="138" y="394" width="46" height="54" rx="3" fill="#10b981" opacity="0.35"/>
+        <rect x="190" y="394" width="46" height="54" rx="3" fill="#38bdf8" opacity="0.35"/>
+        <text x="187" y="463" text-anchor="middle" fill="#e2e8f0" font-size="8" font-family="monospace">768px Tablet</text>
+      </g>
+
+      <!-- Escritorio 1440px -->
+      <g class="svg-anim-float">
+        <rect x="262" y="364" width="112" height="106" rx="8" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+        <rect x="270" y="376" width="96" height="10" rx="2" fill="#1e3a5f"/>
+        <rect x="270" y="392" width="28" height="56" rx="2" fill="#38bdf8" opacity="0.3"/>
+        <rect x="303" y="392" width="28" height="56" rx="2" fill="#10b981" opacity="0.3"/>
+        <rect x="336" y="392" width="30" height="56" rx="2" fill="#f59e0b" opacity="0.3"/>
+        <text x="318" y="463" text-anchor="middle" fill="#e2e8f0" font-size="8" font-family="monospace">1440px Desktop</text>
+      </g>
+
+      <!-- Pie de estado del SVG -->
+      <rect x="34" y="476" width="340" height="18" rx="4" fill="#091326" stroke="#10b981" stroke-width="0.8"/>
+      <text x="204" y="488" text-anchor="middle" fill="#10b981" font-size="8.2" font-family="monospace" font-weight="bold">CLAUDE CODE • COPILOT ACP • GROK BUILD • MCP SERVER READY</text>
+    </svg>
+  </div>
+
+  <!-- Barra de utilidades: Buscador, Tamaño de letra, Tema, Impresión -->
+  <div class="utility-bar" role="region" aria-label="Herramientas de lectura y búsqueda">
+    <div class="search-box">
+      <input type="search" id="global-search" placeholder="🔍 Buscar en todo el tutorial (ej. Ghidra, Clean-Room, MCP)..." aria-label="Buscar contenido en el tutorial">
+      <button type="button" class="btn-tool" id="btn-search-go" title="Ejecutar búsqueda">Buscar</button>
+    </div>
+    <div class="utility-actions">
+      <button type="button" class="btn-tool" id="btn-font-dec" aria-label="Reducir tamaño de letra" title="Reducir letra">A−</button>
+      <button type="button" class="btn-tool" id="btn-font-inc" aria-label="Aumentar tamaño de letra" title="Aumentar letra">A+</button>
+      <button type="button" class="btn-tool" id="btn-theme-toggle" aria-label="Cambiar entre tema oscuro y claro" title="Tema claro/oscuro">🌓 Tema</button>
+      <button type="button" class="btn-tool" id="btn-print-pdf" aria-label="Imprimir o guardar como PDF" title="Imprimir o guardar PDF">🖨️ PDF</button>
+    </div>
+  </div>
+  <div id="search-results-banner" style="max-width:1120px;margin:8px auto 0;padding:0 10px;display:none;"></div>
+
+  <!-- CONTENIDO PRINCIPAL POR PESTAÑAS -->
+  <main id="main-content">
+
+    <!-- ==================== PESTAÑA 0: INICIO ==================== -->
+    <section class="tab-panel active" id="sec-0" data-t="INICIO">
+      <div class="card">
+        <div class="badge-row">
+          <span class="badge">Guía Maestra Nivel Agencia</span>
+          <span class="badge emerald">100% Open Source (MIT / Apache-2.0)</span>
+          <span class="badge amber">Motor Nativo Rust • 320 Herramientas</span>
+        </div>
+
+        <!-- Título en INICIO con "by Rubén Sbarsky" (única vez según instrucción) -->
+        <h1>Recrear Cualquier Software con IA by Rubén Sbarsky</h1>
+        <p style="color:var(--text-secondary);font-size:1.02rem;">
+          Documento de referencia técnica y diseño instruccional interactivo paso a paso basado en la arquitectura de código abierto de <strong>Craft Anything (ArtCraft / storytold)</strong>. Diseñado para aprender desde cero absoluto hasta automatización avanzada con agentes de codificación.
+        </p>
+
+        <!-- SVG HERO Animado compartido con CRÉDITOS -->
+        <div class="svg-hero-wrapper" id="svg-mount-home" aria-label="Ilustración interactiva principal del ecosistema Craft Anything y flujo Clean-Room"></div>
+
+        <div class="svg-controls">
+          <button type="button" class="btn-tool" id="ix" aria-label="Abrir panel de índice de secciones">☰ Ver índice</button>
+          <button type="button" class="btn-tool btn-toggle-svg-anim" aria-label="Pausar o reanudar animación del gráfico">⏯️ Pausar / Reanudar Animación</button>
+        </div>
+
+        <div class="pedagogy-grid">
+          <div class="pedagogy-item">
+            <strong>¿QUÉ ES?</strong>
+            Una metodología y plataforma en Rust puro (Craft Anything) que inspecciona el diseño visual y comportamiento funcional de sitios web, aplicaciones o videojuegos para que un agente de IA programe desde cero una versión propia equivalente.
+          </div>
+          <div class="pedagogy-item">
+            <strong>¿PARA QUÉ SIRVE?</strong>
+            Para que cualquier persona, incluso sin experiencia previa en programación, dirija la creación de aplicaciones web, utilidades de escritorio y juegos 2D basándose en software existente como referencia.
+          </div>
+          <div class="pedagogy-item">
+            <strong>¿POR QUÉ IMPORTA?</strong>
+            Porque sustituye las suposiciones imprecisas de los modelos de lenguaje por <strong>320 herramientas deterministas</strong> que miden píxeles, colores y estructuras reales bajo filosofía legal de Sala Limpia (<em>Clean-Room</em>).
+          </div>
+          <div class="pedagogy-item">
+            <strong>¿CÓMO SE HACE?</strong>
+            Mediante un ciclo automatizado de cuatro fases: <strong>Study</strong> (Inspección), <strong>Build</strong> (Construcción con Claude Code, Copilot o Grok), <strong>Check</strong> (Verificación en 3 pantallas) y <strong>Ready</strong> (Refinamiento).
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Índice Maestro Jerárquico y Exhaustivo del Tutorial</h2>
+        <p>Puedes navegar directamente pulsando cualquier capítulo o usando el botón <strong>«☰ Índice»</strong> de la esquina superior izquierda:</p>
+        <ol>
+          <li><strong>1. Fundamentos de la Recreación de Software con IA:</strong> Qué significa recrear software, síntesis generativa vs. ingeniería inversa tradicional, filosofía Clean-Room y panorama de Craft Anything.</li>
+          <li><strong>2. Arquitectura del Sistema y Componentes Centrales:</strong> Motor en Rust puro (300 + 20 herramientas), comparativa Clean-Room vs. Deep Mode, ecosistema de agentes (Claude Code, Copilot ACP, Grok Build) y estructura de carpetas (<code>craft.json</code>, <code>capture</code>, <code>app</code>, <code>checks</code>, <code>investigation.cany</code>, <code>inbox</code>).</li>
+          <li><strong>3. Requisitos del Sistema e Instalación Paso a Paso:</strong> Hardware, Windows (MSI y Portable), macOS (DMG universal y notarización Apple), Linux (AppImage, deb, rpm, Flatpak) y compilación manual con Rust 1.97+ y Cargo.</li>
+          <li><strong>4. Configuración del Entorno y Vinculación de Agentes de IA:</strong> Diagnóstico con <code>craft-anything-cli doctor</code>, Claude Code, GitHub Copilot CLI (ACP), Grok Build, Gemini CLI, Devin, Maki y servidores locales (Ollama / LocalAI).</li>
+          <li><strong>5. Navegación por las Interfaces de Usuario:</strong> Modo Simple, Modo Avanzado, Paleta de Comandos (<code>Ctrl+K</code> / <code>Cmd+K</code>), métricas de fidelidad a 375px, 768px y 1440px y tarjetas de aprobación.</li>
+          <li><strong>6. El Ciclo de Vida Metodológico: Las Cuatro Fases:</strong> Fase 1 (Study), Fase 2 (Build), Fase 3 (Check) y Fase 4 (Ready).</li>
+          <li><strong>7. Procedimientos Prácticos Paso a Paso para Principiantes:</strong> Procedimiento A (Clonar y adaptar web con Astro y Tailwind), Procedimiento B (Videojuego 2D Snake en Rust con Macroquad) y Procedimiento C (Utilidad de escritorio en Python con CustomTkinter).</li>
+          <li><strong>8. Modo Profundo (Deep Mode):</strong> Activación en UI y CLI, descompilación con Ghidra, análisis de strings, grafos de llamadas, pseudo-C y contenedores de motores de juegos (<code>.pck</code> Godot, Unity, <code>.pak</code> Unreal).</li>
+          <li><strong>9. Automatización, Terminal y Protocolo MCP:</strong> Comandos CLI, scripts desatendidos con <code>rebuild</code>, servidor MCP y banderas <code>--project-folder</code> y <code>--existing edit</code>.</li>
+          <li><strong>10. Seguridad, Ética y Consideraciones Legales:</strong> Políticas de uso legítimo, propiedad intelectual, riesgos en scripts de paquetes y fronteras técnicas (DRM, muros de pago, antitrampas).</li>
+          <li><strong>11. Diagnóstico y Resolución de Errores (Troubleshooting):</strong> Compilación Rust, fallos de conexión con agentes, discrepancias responsivas y cuarentena Gatekeeper en macOS.</li>
+          <li><strong>12. Proyecto Integrador Completo:</strong> Recreación integral de un tablero Kanban en React, TypeScript, Vite y Tailwind CSS con auditoría de evidencias.</li>
+          <li><strong>13. Glosario Técnico Exhaustivo, 14. Banco Maestro de 33 Preguntas y Respuestas, 15. Catálogo Maestro de Prompts y 16. Fuentes Oficiales.</strong></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ==================== PESTAÑA 1: CONCEPTOS Y ARQUITECTURA ==================== -->
+    <section class="tab-panel" id="sec-1" data-t="CONCEPTOS Y ARQUITECTURA">
+      <div class="card">
+        <h2>1. Fundamentos de la Recreación de Software con Inteligencia Artificial</h2>
+
+        <h3>1.1. ¿Qué significa recrear software con IA?</h3>
+        <p>
+          En el marco de la ingeniería de software moderna y el diseño instruccional técnico, recrear un programa <strong>no consiste</strong> en extraer de forma ilegítima código privado ni en realizar duplicados exactos de archivos binarios protegidos. Por el contrario, se define como <strong>la metodología de analizar sistemáticamente el diseño visual, la arquitectura de interfaces, la experiencia de usuario y el comportamiento funcional observable de una aplicación existente para construir, desde cero y de forma completamente independiente, una nueva solución de código abierto que cumpla las mismas funciones</strong>.
+        </p>
+        <p>
+          Para personas sin formación previa en programación, este enfoque representa una transformación radical. Ya no es necesario invertir años en aprender sintaxis compleja, compiladores de bajo nivel o herramientas de depuración antes de poder materializar una idea de software. El usuario asume el rol de <strong>arquitecto y director del proyecto</strong>, definiendo requisitos y validando resultados, mientras que un motor automatizado de inspección y un agente de inteligencia artificial asumen las tareas técnicas de escritura de código, maquetación y ensamblado.
+        </p>
+
+        <h3>1.2. De la ingeniería inversa tradicional a la síntesis generativa</h3>
+        <p>
+          Históricamente, la ingeniería inversa ha sido una disciplina reservada a especialistas con amplios conocimientos en lenguaje ensamblador, llamadas al núcleo del sistema operativo y herramientas avanzadas de análisis estático y dinámico como Ghidra o depuradores de bajo nivel. Requería desensamblar manualmente archivos ejecutables para reconstruir paso a paso la lógica de cada función.
+        </p>
+        <p>La síntesis generativa asistida por IA introduce un flujo de trabajo optimizado en tres dimensiones:</p>
+        <ol>
+          <li><strong>Inspección empírica guiada por herramientas:</strong> En lugar de confiar en estimaciones aproximadas de un modelo de lenguaje, se emplean herramientas analíticas deterministas que miden dimensiones reales en píxeles, extraen jerarquías de elementos visuales (árbol DOM), determinan paletas cromáticas exactas y analizan dependencias estructurales.</li>
+          <li><strong>Generación contextual de código:</strong> Un agente de inteligencia artificial (como Claude Code o GitHub Copilot) recibe estas evidencias estructuradas y programa los componentes en lenguajes modernos y seguros (como TypeScript, Rust o Python) siguiendo las mejores prácticas de la industria.</li>
+          <li><strong>Verificación comparativa continua:</strong> El software generado se compila, se ejecuta en un entorno controlado y se compara de forma automática contra la aplicación de referencia a tres anchos de pantalla normalizados ($375\text{ px}$, $768\text{ px}$ y $1440\text{ px}$), corrigiendo discrepancias visuales o lógicas de manera iterativa.</li>
+        </ol>
+
+        <h3>1.3. La filosofía Clean-Room (Sala Limpia): Principios y relevancia legal</h3>
+        <p>
+          El diseño en sala limpia (<em>Clean-Room Software Engineering</em>) es una técnica de desarrollo de software nacida para permitir la interoperabilidad y la creación de programas compatibles sin infringir derechos de autor ni secretos industriales. En este marco metodológico:
+        </p>
+        <ul>
+          <li><strong>Aislamiento absoluto del código privado:</strong> El sistema tiene prohibido acceder, leer o examinar el código fuente original o los archivos internos protegidos de la aplicación analizada.</li>
+          <li><strong>Inspección exclusiva de caja negra:</strong> El análisis se fundamenta únicamente en los elementos públicamente observables por cualquier usuario: capturas de pantalla de la interfaz, textos visibles, medidas de diseño, tipografías, colores, espaciados y flujos de navegación estándar.</li>
+          <li><strong>Originalidad e independencia jurídica:</strong> Al no tener acceso a la base de código subyacente, el agente de IA redacta una obra completamente nueva e independiente. El resultado emula el comportamiento funcional observable sin copiar la propiedad intelectual del código original.</li>
+        </ul>
+
+        <h3>1.4. Panorama general de la solución: Craft Anything</h3>
+        <p>
+          <strong>Craft Anything</strong> es una plataforma de código abierto desarrollada en Rust puro por el equipo de <strong>ArtCraft</strong> y su comunidad global. Su propósito es permitir que cualquier usuario apunte hacia un sitio web público, una aplicación de escritorio o un videojuego, exprese lo que desea construir y permita que un agente de codificación desarrolle un proyecto nuevo equivalente. La plataforma se distribuye bajo licencias abiertas permisivas (<strong>MIT y Apache-2.0</strong>), lo que garantiza plena libertad para auditar el motor, crear derivados y desplegar proyectos sin ataduras comerciales.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>2. Arquitectura del Sistema y Componentes Centrales</h2>
+
+        <h3>2.1. El motor nativo en Rust puro y sus 320 herramientas</h3>
+        <p>
+          En el núcleo de Craft Anything opera un motor de alto rendimiento programado íntegramente en <strong>Rust</strong>, garantizando velocidad de ejecución, portabilidad multiplataforma y una robusta seguridad de memoria que elimina errores comunes de corrupción de punteros.
+        </p>
+        <p>El motor incorpora un catálogo total de <strong>$320 = 300 + 20$ herramientas nativas</strong>:</p>
+        <ul>
+          <li><strong>300 herramientas del motor interno:</strong> Abarcan analizadores y decodificadores sin dependencias externas para inspeccionar ejecutables nativos (Windows PE, Linux ELF, macOS Mach-O), aplicaciones de .NET, entornos Java y Android, paquetes de Apple, aplicaciones empaquetadas en Electron/JavaScript, firmware de dispositivos, capturas de paquetes de red y formatos de datos de videojuegos.</li>
+          <li><strong>20 herramientas de soporte e IA:</strong> Gestionan la interacción con agentes de desarrollo, las rutinas de configuración del sistema y los protocolos de diagnóstico automatizado.</li>
+        </ul>
+        <p>
+          Una ventaja crucial de esta arquitectura es que el motor extrae datos y evidencias de manera determinista: la inteligencia artificial no se utiliza para adivinar medidas o colores, sino que recibe hechos verificados para escribir el código.
+        </p>
+
+        <h3>2.2. División de modos: Clean-Room versus Deep Mode</h3>
+        <p>Craft Anything ofrece dos modos de operación claramente delimitados para adaptarse a los objetivos del usuario y a las condiciones legales del proyecto:</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Dimensión Técnica</th>
+                <th>Modo Clean-Room (Predeterminado)</th>
+                <th>Modo Deep (Profundo / Privado)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Acceso a código y binarios</strong></td>
+                <td>Estrictamente bloqueado por diseño.</td>
+                <td>Habilitado para inspección exhaustiva.</td>
+              </tr>
+              <tr>
+                <td><strong>Fuente de información</strong></td>
+                <td>Capturas visuales, textos visibles, medidas DOM, colores, fuentes.</td>
+                <td>Desensamblado, pseudo-C, descompilación, cadenas de texto internas, scripts.</td>
+              </tr>
+              <tr>
+                <td><strong>Integración con Ghidra</strong></td>
+                <td>Desactivada.</td>
+                <td>Activa automáticamente si Ghidra está instalado en el sistema.</td>
+              </tr>
+              <tr>
+                <td><strong>Comportamiento ante herramientas</strong></td>
+                <td>Rechaza peticiones que busquen leer estructuras internas.</td>
+                <td>Permite el uso irrestricto de las 320 herramientas.</td>
+              </tr>
+              <tr>
+                <td><strong>Caso de uso recomendado</strong></td>
+                <td>Sitios web de terceros, software público comercial, aprendizaje abierto.</td>
+                <td>Software propio, auditorías de seguridad autorizadas, entornos privados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>2.3. El ecosistema de agentes compatibles</h3>
+        <p>Craft Anything no programa de forma directa mediante un modelo cerrado; en su lugar, actúa como un <strong>orquestador</strong> que dirige a los agentes de codificación más avanzados instalados en el ordenador local del usuario:</p>
+        <ul>
+          <li><strong>Claude Code (Anthropic):</strong> Constituye el agente de integración primaria. Craft Anything invoca el binario oficial <code>claude</code> instalado por el usuario, empleando sus propias credenciales sin intermediar en la cuenta ni almacenar claves privadas.</li>
+          <li><strong>GitHub Copilot CLI:</strong> Se conecta mediante el protocolo estandarizado <strong>ACP (Agent Client Protocol)</strong>, aprovechando la sesión autenticada con <code>copilot login</code>.</li>
+          <li><strong>Grok Build (xAI):</strong> Permite la conexión con el ejecutable local de Grok mediante comunicación bidireccional por consola estándar (<code>grok agent stdio</code>) tras autenticarse con <code>grok login</code>.</li>
+          <li><strong>Agentes basados en ACP:</strong> Admite integración con múltiples agentes modernos de código, incluyendo <strong>Gemini CLI, Qwen Code, Goose, Hermes, Maki y Devin</strong>.</li>
+          <li><strong>Modelos para consultas y análisis:</strong> La interfaz permite configurar proveedores adicionales (Anthropic, OpenAI, OpenRouter, xAI o servidores locales compatibles con la API de OpenAI como <strong>Ollama</strong> o <strong>LocalAI</strong>) para realizar preguntas sobre el software sin iniciar una fase de construcción completa.</li>
+        </ul>
+
+        <h3>2.4. Estructura interna de los proyectos</h3>
+        <p>Cada proceso de recreación se organiza dentro de un directorio independiente ubicado habitualmente en <code>Documents/Craft Anything/&lt;nombre-proyecto&gt;</code>, estructurado bajo seis componentes esenciales:</p>
+        <ul>
+          <li><code>craft.json</code>: Archivo de configuración central que documenta la URL o archivo de destino, el prompt inicial, el historial de iteraciones y las métricas de estado.</li>
+          <li><code>capture/</code>: Almacén de evidencias recopiladas durante la fase de estudio (capturas visuales a diferentes anchos de pantalla, muestras de color, tablas tipográficas y jerarquías DOM).</li>
+          <li><code>app/</code>: Directorio donde el agente de codificación escribe, compila y refina el código fuente del nuevo proyecto (gestionado internamente como repositorio Git).</li>
+          <li><code>checks/</code>: Registro de auditorías visuales y funcionales, donde se calculan los porcentajes de similitud y se identifican discrepancias entre el original y la réplica.</li>
+          <li><code>investigation.cany/</code>: Base de datos técnica que indexa las evidencias, niveles de certidumbre y limitaciones identificadas por el motor.</li>
+          <li><code>inbox/</code>: Bandeja de notificaciones que alberga las tarjetas de decisión o permisos pendientes de aprobación por parte del usuario.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ==================== PESTAÑA 2: INSTALACIÓN Y AGENTES IA ==================== -->
+    <section class="tab-panel" id="sec-2" data-t="INSTALACIÓN Y AGENTES IA">
+      <div class="card">
+        <h2>3. Requisitos del Sistema e Instalación Paso a Paso</h2>
+
+        <h3>3.1. Requisitos de hardware y dependencias base</h3>
+        <ul>
+          <li><strong>Procesador (CPU):</strong> Arquitectura <code>x86_64</code> (Intel o AMD) o <code>ARM64</code> (Apple Silicon o procesadores Snapdragon).</li>
+          <li><strong>Memoria RAM:</strong> Mínimo $8\text{ GB}$ (se recomiendan $16\text{ GB}$ para proyectos que requieran compilación pesada o ejecución de descompiladores).</li>
+          <li><strong>Espacio en disco:</strong> $2\text{ GB}$ libres para el motor base de Craft Anything, más espacio adicional según las dependencias de los proyectos a crear (ecosistemas Node.js, Rust o Python).</li>
+          <li><strong>Conectividad:</strong> Acceso a Internet para descargar dependencias y comunicarse con los servicios de inteligencia artificial.</li>
+        </ul>
+
+        <h3>3.2. Instalación en sistemas Windows (Instalador MSI y versión Portable)</h3>
+        <p>Para usuarios en entornos Microsoft Windows, los instaladores están debidamente firmados digitalmente:</p>
+        <ol>
+          <li>Acceda al repositorio oficial en GitHub (<code>storytold/craft-anything/releases/latest</code>).</li>
+          <li>Descargue el instalador <code>.msi</code> correspondiente a su arquitectura: <code>craft-anything-&lt;version&gt;-windows-x64.msi</code> para procesadores tradicionales o <code>craft-anything-&lt;version&gt;-windows-arm64.msi</code> para dispositivos ARM.</li>
+          <li>Ejecute el archivo descargado y complete el asistente de instalación. La aplicación creará accesos directos en el menú de inicio y registrará las variables necesarias.</li>
+          <li><strong>Uso portable:</strong> Si requiere ejecutar la aplicación sin permisos de administrador, descargue el archivo <code>.zip</code> portable. Al extraerlo, todos los ajustes se guardarán de forma local en esa misma carpeta.</li>
+        </ol>
+
+        <h3>3.3. Instalación en macOS (Paquetes DMG, binarios universales y notarización de Apple)</h3>
+        <ol>
+          <li>Descargue el instalador universal <code>craft-anything-&lt;version&gt;-macos-universal.dmg</code>.</li>
+          <li>Abra el archivo <code>.dmg</code> y arrastre el icono de <strong>Craft Anything</strong> a su carpeta de <strong>Aplicaciones</strong>.</li>
+          <li>Ambos binarios están certificados y notarizados por Apple. Puede verificar la firma abriendo el Terminal e introduciendo:</li>
+        </ol>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Terminal macOS — Verificación de firma notarizada por Apple</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">spctl --assess --type open --context context:primary-signature -v "craft-anything-&lt;version&gt;-macos-universal.dmg"</pre>
+        </div>
+
+        <p>4. Si utiliza la versión de terminal por separado y el sistema muestra un aviso de cuarentena al descargar el binario universal <code>craft-anything-cli</code>, remueva el bloqueo con:</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Terminal macOS — Eliminar atributo de cuarentena en CLI</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">xattr -d com.apple.quarantine ~/.local/bin/craft-anything-cli</pre>
+        </div>
+
+        <h3>3.4. Instalación en distribuciones Linux</h3>
+        <p>Craft Anything ofrece una amplia variedad de paquetes para el ecosistema Linux:</p>
+        <ul>
+          <li><strong>AppImage (Recomendado):</strong> Descargue <code>craft-anything-&lt;version&gt;-linux-x86_64.AppImage</code>, asigne permisos de ejecución y ejecútelo:</li>
+        </ul>
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Terminal Linux — Permisos y ejecución de AppImage</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">chmod +x craft-anything-*.AppImage
+./craft-anything-*.AppImage</pre>
+        </div>
+
+        <ul>
+          <li><strong>Paquete Debian / Ubuntu (.deb):</strong> Instale mediante <code>dpkg</code>:</li>
+        </ul>
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Terminal Debian/Ubuntu — Instalación paquete .deb</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">sudo dpkg -i craft-anything-*.deb || sudo apt-get install -f</pre>
+        </div>
+
+        <ul>
+          <li><strong>Paquete Fedora / RHEL (.rpm):</strong> Instale mediante el gestor <code>dnf</code>:</li>
+        </ul>
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Terminal Fedora/RHEL — Instalación paquete .rpm</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">sudo dnf install craft-anything-*.rpm</pre>
+        </div>
+
+        <ul>
+          <li><strong>Flatpak:</strong> Instale el archivo <code>.flatpak</code> para un aislamiento total. <em>Nota de diseño:</em> el sandbox de Flatpak restringe la apertura de navegadores externos automáticos para auditar páginas web; se recomienda <strong>AppImage</strong> para una experiencia web completa.</li>
+        </ul>
+
+        <h3>3.5. Compilación manual desde el código fuente mediante Rust y Cargo</h3>
+        <p>Para desarrolladores que deseen compilar la última versión desde el código fuente:</p>
+        <ol>
+          <li>Verifique que cuenta con <strong>Rust 1.97 o superior</strong> (<code>rustup update</code>).</li>
+          <li>En sistemas Ubuntu/Debian, instale las bibliotecas de desarrollo gráfico requeridas:</li>
+        </ol>
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Ubuntu/Debian — Dependencias gráficas Wayland, X11 y GTK3</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">sudo apt-get install libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libgtk-3-dev</pre>
+        </div>
+
+        <p>3. Clone el repositorio y compile los paquetes principales:</p>
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Rust &amp; Cargo — Clonado y compilación en modo release</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">git clone https://github.com/storytold/craft-anything
+cd craft-anything
+cargo run --release -p craft-anything
+cargo install --path apps/craft-anything-cli</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>4. Configuración del Entorno y Vinculación de Agentes de IA</h2>
+
+        <h3>4.1. Diagnóstico del sistema mediante <code>craft-anything-cli doctor</code></h3>
+        <p>Antes de comenzar cualquier proyecto, es fundamental comprobar que todas las dependencias y agentes estén correctamente configurados. La herramienta CLI incluye un comando de diagnóstico integral:</p>
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>CLI — Diagnóstico integral del sistema</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">craft-anything-cli doctor</pre>
+        </div>
+        <p>Este comando verifica:</p>
+        <ul>
+          <li>La disponibilidad de agentes de codificación en el sistema (<code>claude</code>, <code>copilot</code>, <code>grok</code>).</li>
+          <li>El estado del entorno de ejecución de Rust y Node.js.</li>
+          <li>La presencia opcional de suites de descompilación como Ghidra para el Modo Profundo.</li>
+        </ul>
+
+        <h3>4.2. Configuración y autenticación de Claude Code como agente primario</h3>
+        <p>Claude Code es el agente con mayor grado de integración nativa en Craft Anything:</p>
+        <ol>
+          <li>Instale la utilidad de línea de comandos de Claude en su sistema siguiendo las directrices de Anthropic (comúnmente mediante <code>npm install -g @anthropic-ai/claude-code</code>).</li>
+          <li>Abra una ventana de terminal e inicie sesión:</li>
+        </ol>
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Terminal — Autenticación oficial de Claude Code</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">claude login</pre>
+        </div>
+        <p>3. Craft Anything detectará la presencia del comando <code>claude</code> en el sistema y lo utilizará de forma transparente. No es necesario copiar claves de API dentro de la configuración de Craft Anything para este agente.</p>
+
+        <h3>4.3. Vinculación de GitHub Copilot CLI mediante el protocolo ACP</h3>
+        <ol>
+          <li>Instale la CLI oficial de Copilot.</li>
+          <li>Autentíquese en la terminal ejecutando:</li>
+        </ol>
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Terminal — Inicio de sesión en GitHub Copilot CLI</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">copilot login</pre>
+        </div>
+        <p>3. En Craft Anything, acceda a <strong>Settings → AI</strong> y elija <strong>GitHub Copilot</strong> como agente de construcción.</p>
+
+        <h3>4.4. Configuración de Grok Build y agentes alternativos</h3>
+        <ul>
+          <li><strong>Grok Build:</strong> Requiere tener instalado el ejecutable <code>grok</code> y autenticarse con <code>grok login</code>. El sistema se conectará a través de la interfaz de consola del agente (<code>grok agent stdio</code>).</li>
+          <li><strong>Agentes ACP (Gemini CLI, Devin, Maki):</strong> Pueden activarse seleccionando su perfil correspondiente en los ajustes de la aplicación o pasando la bandera de configuración correspondiente por terminal.</li>
+        </ul>
+
+        <h3>4.5. Configuración de modelos de lenguaje para análisis</h3>
+        <p>Si desea hacer preguntas sobre una aplicación o sitio web sin ordenar una construcción completa, Craft Anything permite enlazar modelos de lenguaje en <strong>Settings → AI</strong>:</p>
+        <ul>
+          <li>Ingrese su clave de API para proveedores como Anthropic, OpenAI, OpenRouter o xAI.</li>
+          <li>Para privacidad total, configure la URL de un servidor local compatible con OpenAI (por ejemplo, <code>http://localhost:11434/v1</code> para modelos ejecutados localmente con <strong>Ollama</strong>).</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ==================== PESTAÑA 3: INTERFACES Y 4 FASES ==================== -->
+    <section class="tab-panel" id="sec-3" data-t="INTERFACES Y 4 FASES">
+      <div class="card">
+        <h2>5. Navegación por las Interfaces de Usuario</h2>
+
+        <h3>5.1. El Modo Simple: Diseñado para principiantes y flujos ágiles</h3>
+        <p>Al iniciar Craft Anything, el usuario es recibido por el <strong>Modo Simple</strong>, concebido para maximizar la facilidad de uso sin barreras técnicas:</p>
+        <ol>
+          <li><strong>Selector de objetivo:</strong> Permite ingresar una dirección web (URL), seleccionar un archivo ejecutable local o definir una idea abstracta.</li>
+          <li><strong>Caja de solicitud (<em>"What do you want to make?"</em>):</strong> Campo de texto donde se explica en lenguaje cotidiano qué resultado se espera obtener.</li>
+          <li><strong>Botón Start:</strong> Inicia de forma automática el flujo de trabajo de cuatro pasos.</li>
+          <li><strong>Tarjetas de aprobación:</strong> Cuadros de diálogo claros que aparecen cuando el agente necesita instalar paquetes o tomar decisiones arquitectónicas.</li>
+          <li><strong>Barra de estado e índice de similitud:</strong> Indicadores visuales que muestran en qué fase se encuentra el proceso y qué porcentaje de fidelidad se ha alcanzado.</li>
+          <li><strong>Caja de refinamiento inferior:</strong> Espacio interactivo para solicitar modificaciones incrementales una vez terminado el primer borrador.</li>
+        </ol>
+
+        <h3>5.2. El Modo Avanzado: El banco de trabajo para análisis técnico profundo</h3>
+        <p>Para ingenieros, auditores de seguridad o usuarios que desean examinar las entrañas del software, el <strong>Modo Avanzado</strong> ofrece un banco de trabajo completo:</p>
+        <ul>
+          <li><strong>Panel de funciones:</strong> Catálogo de todas las rutinas y métodos identificados en el binario o script.</li>
+          <li><strong>Explorador de strings:</strong> Filtro rápido para examinar textos, mensajes de error y rutas de red embebidas.</li>
+          <li><strong>Visor de ensamblador y pseudo-C:</strong> Traducción del código máquina a representaciones comprensibles de alto nivel.</li>
+          <li><strong>Grafos de llamadas (Call Graphs):</strong> Esquemas visuales que trazan el flujo de ejecución entre componentes.</li>
+          <li><strong>Panel de evidencias y desconocidos:</strong> Registro detallado de qué hechos técnicos han sido confirmados y qué elementos permanecen sin verificar.</li>
+          <li><strong>Consola de agentes:</strong> Registro en tiempo real de los comandos ejecutados por la IA en el sistema anfitrión.</li>
+        </ul>
+
+        <h3>5.3. Navegación mediante la paleta de comandos (<code>Ctrl+K</code> / <code>Cmd+K</code>)</h3>
+        <p>Al pulsar la combinación <code>Ctrl+K</code> (en Windows/Linux) o <code>Cmd+K</code> (en macOS), se despliega la paleta de comandos, que permite:</p>
+        <ul>
+          <li>Alternar de manera instantánea entre el Modo Clean-Room y el Modo Deep.</li>
+          <li>Invocar cualquiera de las 320 herramientas por su nombre técnico.</li>
+          <li>Abrir directamente el directorio del proyecto en el explorador de archivos.</li>
+          <li>Pausar o cancelar la ejecución del agente de codificación.</li>
+        </ul>
+
+        <h3>5.4. Interpretación de métricas de fidelidad y tarjetas de aprobación</h3>
+        <p>Craft Anything opera bajo el estándar de <strong>comprobación empírica continua</strong>:</p>
+        <ul>
+          <li><strong>Puntuación de fidelidad visual:</strong> Durante la verificación, el sistema compara capturas del original y de la réplica en resoluciones móvil ($375\text{ px}$), tableta ($768\text{ px}$) y escritorio ($1440\text{ px}$), señalando discrepancias en color, alineación y fuentes.</li>
+          <li><strong>Tarjetas de aprobación en <code>inbox</code>:</strong> Ninguna acción potencialmente sensible se realiza sin el visto bueno del usuario. Si el agente requiere ejecutar <code>npm install</code> o <code>cargo build</code>, el usuario decide si autoriza la ejecución única o permanente para ese proyecto.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>6. El Ciclo de Vida Metodológico: Las Cuatro Fases de Creación</h2>
+
+        <div class="pedagogy-grid">
+          <div class="pedagogy-item">
+            <strong>6.1. Fase 1: Study (Estudio)</strong>
+            El motor examina el objetivo sin alterar ningún archivo. En sitios web toma capturas a $375\text{ px}$, $768\text{ px}$ y $1440\text{ px}$, extrae el árbol DOM, registra colores hexadecimales y analiza estilos tipográficos. En apps locales inspecciona metadatos externos y dependencias visibles. Todo se guarda en <code>capture/</code> e indexa en <code>investigation.cany/</code>.
+          </div>
+          <div class="pedagogy-item">
+            <strong>6.2. Fase 2: Build (Construcción)</strong>
+            Entra en acción el agente de codificación. Lee las evidencias técnicas estructuradas y el requerimiento del usuario. Inicializa la estructura en <code>app/</code>, redacta el código fuente, configura manifiestos (<code>package.json</code>, <code>Cargo.toml</code>, etc.) y compila la solución.
+          </div>
+          <div class="pedagogy-item">
+            <strong>6.3. Fase 3: Check (Verificación)</strong>
+            Con el código generado y en ejecución local, el sistema captura pantallas de la réplica en las mismas tres resoluciones ($375\text{ px}$, $768\text{ px}$, $1440\text{ px}$). Compara matemáticamente la similitud visual y funcional. Si detecta desalineaciones, remite un informe de discrepancias al agente para corregirlas antes de entregar.
+          </div>
+          <div class="pedagogy-item">
+            <strong>6.4. Fase 4: Ready (Previsualización)</strong>
+            La interfaz habilita botones directos (<em>Open Preview</em> o <em>Launch App</em>) para abrir el sitio web o lanzar la aplicación. El usuario interactúa con el software y solicita ajustes puntuales en el cuadro de refinamiento inferior.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== PESTAÑA 4: PROCEDIMIENTOS PASO A PASO ==================== -->
+    <section class="tab-panel" id="sec-4" data-t="PROCEDIMIENTOS PASO A PASO">
+      <div class="card">
+        <h2>7. Procedimientos Prácticos Paso a Paso para Principiantes</h2>
+        <p>Cada procedimiento ha sido estructurado siguiendo la progresión pedagógica de una sola acción principal por paso, explicando el motivo y el resultado esperado.</p>
+
+        <h3>7.1. Procedimiento A: Clonar y adaptar un sitio web público paso a paso</h3>
+        <p><strong>Objetivo:</strong> Tomar como referencia una página de aterrizaje (<em>landing page</em>) o un portal institucional y transformarlo en una aplicación web moderna y propia sin programar manualmente.</p>
+        <ol>
+          <li><strong>Lanzamiento y configuración de modo:</strong> Inicie la aplicación de escritorio de Craft Anything. Verifique en la barra superior que el conmutador esté posicionado en <strong>Simple Mode</strong> y que el indicador marque <strong>Clean-room</strong>. <em>(Motivo: Garantizar una interfaz guiada y total aislamiento de código privado).</em></li>
+          <li><strong>Definición de la URL objetivo:</strong> En la casilla de entrada de destino, introduzca la dirección del sitio web que desea emular (por ejemplo, <code>https://example.com</code>).</li>
+          <li><strong>Redacción de la instrucción inicial:</strong> En el cuadro de texto central (<em>"What do you want to make?"</em>), escriba la siguiente directriz estructurada:</li>
+        </ol>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Procedimiento A — Recreación web con Astro y Tailwind CSS</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Recrea este sitio web como una aplicación moderna utilizando Astro y Tailwind CSS. Mantén la jerarquía de navegación y la distribución visual de secciones, pero sustituye el nombre de la empresa por Servicios Globales y utiliza imágenes de muestra libres de derechos.</pre>
+        </div>
+
+        <ol start="4">
+          <li><strong>Puesta en marcha:</strong> Presione el botón <strong>Start</strong>.</li>
+          <li><strong>Seguimiento de la fase de estudio (Study):</strong> En pantalla observará cómo el motor abre un navegador automatizado, toma capturas del sitio web a $375\text{ px}$ (móvil), $768\text{ px}$ (tableta) y $1440\text{ px}$ (escritorio), extrae los códigos de color hexadecimales y analiza las fuentes tipográficas. Toda la evidencia se guarda en la carpeta <code>capture/</code>.</li>
+          <li><strong>Autorización en la fase de construcción (Build):</strong> El agente de codificación (como Claude Code) comenzará a generar los componentes en la carpeta <code>app/</code>. Aparecerá una tarjeta en pantalla indicando que el agente requiere instalar las dependencias de Astro y Tailwind. Haga clic en <strong>Allow</strong> (Permitir).</li>
+          <li><strong>Revisión de la comprobación (Check):</strong> Una vez compilado el proyecto, el comparador visual superpondrá capturas de su nueva web frente a la original. Se mostrará un índice de fidelidad porcentual.</li>
+          <li><strong>Previsualización interactiva (Ready):</strong> Al completarse el ciclo, presione el botón <strong>Open Preview</strong>. Se abrirá su navegador web con su nueva aplicación corriendo en un servidor local.</li>
+          <li><strong>Refinamiento estético incremental:</strong> Si observa que el encabezado necesita un ajuste, use el cuadro inferior de refinamiento con el siguiente prompt:</li>
+        </ol>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Refinamiento Procedimiento A — Barra superior con desenfoque</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Haz que la barra de navegación superior tenga un fondo semitransparente con efecto de desenfoque y añade un botón de contacto en color verde esmeralda (#10B981).</pre>
+        </div>
+        <p><em>Resultado esperado:</em> El agente actualizará el código en segundos sin rehacer el proyecto desde cero.</p>
+      </div>
+
+      <div class="card">
+        <h3>7.2. Procedimiento B: Recrear la mecánica de un videojuego en 2D (ejemplo clásico: Snake en Rust)</h3>
+        <p><strong>Objetivo:</strong> Recrear videojuegos nativos de alto rendimiento para computadoras y navegadores a partir de una mecánica conocida.</p>
+        <ol>
+          <li><strong>Acceso al Modo Simple:</strong> Abra Craft Anything en Modo Simple.</li>
+          <li><strong>Petición sintética directa:</strong> Dado que se trata de recrear una mecánica conocida sin un archivo ejecutable previo, deje el selector en modo juego e introduzca en la caja de texto:</li>
+        </ol>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Procedimiento B — Juego Snake en Rust con Macroquad</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Recrea el clásico juego de la serpiente (Snake) en Rust utilizando la biblioteca de gráficos 2D Macroquad. El juego debe responder a las flechas del teclado, incluir detección de colisiones contra los bordes de la pantalla y contra el propio cuerpo de la serpiente, marcador de puntos en pantalla y reinicio instantáneo con la tecla R.</pre>
+        </div>
+
+        <ol start="3">
+          <li><strong>Inicio de generación:</strong> Presione <strong>Start</strong>. El motor creará el directorio del proyecto en <code>Documents/Craft Anything/snake-rust</code>.</li>
+          <li><strong>Construcción automatizada:</strong> El agente redactará el archivo de dependencias <code>Cargo.toml</code> con la biblioteca <code>macroquad</code> y escribirá la lógica del bucle de juego en <code>src/main.rs</code>.</li>
+          <li><strong>Permiso de compilación:</strong> Aparecerá una tarjeta solicitando permiso para compilar el proyecto con <code>cargo run</code>. Presione <strong>Allow</strong>.</li>
+          <li><strong>Prueba y validación:</strong> Se abrirá una ventana gráfica con el videojuego completamente jugable. Pruebe las mecánicas de colisión y reinicio. Al cerrar la ventana, el sistema marcará el estado en verde como <strong>Ready</strong>.</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h3>7.3. Procedimiento C: Analizar y emular una utilidad de escritorio sencilla</h3>
+        <p><strong>Objetivo:</strong> Recrear utilidades prácticas de oficina (calculadoras financieras, agendas de notas o conversores de unidades) en Python moderno.</p>
+        <ol>
+          <li><strong>Selección de archivo local:</strong> En Craft Anything, haga clic en la opción <strong>Choose a file…</strong> y seleccione el binario de la herramienta de referencia (por ejemplo, una calculadora básica ejecutable).</li>
+          <li><strong>Garantía Clean-Room:</strong> Verifique que el Modo Profundo esté apagado para evitar examinar código privado; el sistema solo capturará la ventana gráfica del programa.</li>
+          <li><strong>Instrucción de construcción:</strong> Introduzca el siguiente prompt en el cuadro principal:</li>
+        </ol>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Procedimiento C — Utilidad de escritorio en Python CustomTkinter</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Recrea la interfaz y funciones de cálculo de esta utilidad como una aplicación de escritorio moderna en Python utilizando la biblioteca CustomTkinter. Asegura un diseño con esquinas redondeadas y soporte nativo para teclado numérico.</pre>
+        </div>
+
+        <ol start="4">
+          <li><strong>Ejecución y entrega:</strong> El agente creará el entorno y el script <code>app/main.py</code>. Al presionar <strong>Launch App</strong>, disfrutará de una aplicación nativa totalmente independiente.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ==================== PESTAÑA 5: MODO PROFUNDO Y CLI / MCP ==================== -->
+    <section class="tab-panel" id="sec-5" data-t="MODO PROFUNDO Y CLI / MCP">
+      <div class="card">
+        <h2>8. Modo Profundo (Deep Mode): Análisis Estructural e Inspección de Código</h2>
+
+        <h3>8.1. Activación del Modo Profundo en la interfaz y vía CLI</h3>
+        <p>El Modo Profundo (<em>Deep Mode</em>) desbloquea la potencia analítica de las 320 herramientas de ingeniería inversa para escenarios donde el usuario cuenta con legitimación para auditar archivos internos:</p>
+        <ul>
+          <li><strong>En la interfaz gráfica:</strong> Active el interruptor <strong>Deep Mode</strong> situado en la barra superior de la ventana o en <strong>Settings → General</strong>.</li>
+          <li><strong>En la línea de comandos:</strong> Añada la bandera <code>--deep</code> al comando de reconstrucción o configure la preferencia global mediante:</li>
+        </ul>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>CLI — Activar Modo Profundo (Deep Mode) globalmente</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">craft-anything-cli settings_set deep_mode true</pre>
+        </div>
+
+        <h3>8.2. Descompilación y desensamblado nativo con Ghidra</h3>
+        <ul>
+          <li>Si el sistema detecta que la suite de análisis de código <strong>Ghidra</strong> está instalada en el equipo, Craft Anything la invocará en segundo plano para generar representaciones en <strong>pseudo-C</strong> de alta precisión.</li>
+          <li>Si Ghidra no está presente, Craft Anything utiliza sus propios descompiladores y desensambladores integrados en Rust, capaces de procesar código máquina <code>x86_64</code>, <code>ARM</code>, y bytecode de plataformas gestionadas como <code>.NET</code> y <code>Java</code>.</li>
+        </ul>
+
+        <h3>8.3. Análisis de flujos de ejecución, cadenas de texto (strings) y grafos de llamadas</h3>
+        <p>Al alternar a la vista de <strong>Modo Avanzado</strong> en Modo Profundo, el usuario accede a datos estructurales esenciales:</p>
+        <ul>
+          <li><strong>Explorador de cadenas de texto (Strings):</strong> Permite aislar textos fijos dentro del ejecutable, facilitando la identificación de endpoints de API, nombres de archivos de configuración o mensajes de validación interna.</li>
+          <li><strong>Grafos de llamadas (Call Graphs):</strong> Genera representaciones visuales que muestran qué funciones internas se comunican entre sí, ayudando a entender el flujo de datos desde la interfaz hasta los módulos de cálculo.</li>
+          <li><strong>Consola de pseudo-C:</strong> Proporciona una lectura algorítmica aproximada en sintaxis similar a C, permitiendo al agente de IA replicar fielmente cálculos matemáticos complejos en el nuevo proyecto.</li>
+        </ul>
+
+        <h3>8.4. Inspección de paquetes de red, archivos de datos y motores de juegos</h3>
+        <p>Si el objetivo inspeccionado es un videojuego o software distribuido:</p>
+        <ul>
+          <li>El motor identifica formatos de almacenamiento empaquetados habituales (archivos <code>.pck</code> de <strong>Godot</strong>, bundles de <strong>Unity</strong> o paquetes <code>.pak</code> de <strong>Unreal Engine</strong>).</li>
+          <li>Extrae listas de texturas, modelos y tablas de propiedades para que el agente de codificación pueda reconstruir las escenas y la física utilizando activos libres o sintéticos equivalentes.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>9. Automatización, Terminal y Protocolo MCP (Model Context Protocol)</h2>
+
+        <h3>9.1. El CLI de Craft Anything: Estructura de comandos y banderas esenciales</h3>
+        <p>La herramienta de terminal <code>craft-anything-cli</code> permite controlar y automatizar todas las funciones de la plataforma sin necesidad de abrir la interfaz de escritorio. Comandos principales:</p>
+        <ul>
+          <li><code>craft-anything-cli doctor</code>: Ejecuta el chequeo integral de dependencias, agentes y compiladores.</li>
+          <li><code>craft-anything-cli commands</code>: Lista las 320 herramientas nativas agrupadas por familias funcionales.</li>
+          <li><code>craft-anything-cli setup</code>: Configura automáticamente la integración con los agentes de desarrollo locales.</li>
+          <li><code>craft-anything-cli mcp</code>: Inicia el servidor MCP local para conectar Craft Anything con herramientas externas.</li>
+          <li><code>craft-anything-cli rebuild</code>: Ejecuta un ciclo completo de inspección y reconstrucción desatendida.</li>
+        </ul>
+
+        <h3>9.2. Creación y ejecución de scripts desatendidos con <code>rebuild</code></h3>
+        <p>El comando <code>rebuild</code> admite múltiples banderas operativas:</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>CLI — Recreación de un sitio web en sala limpia</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">craft-anything-cli rebuild https://example.com "Recrea este sitio web con HTML y Tailwind CSS" --clean-room</pre>
+        </div>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>CLI — Creación de un juego definiendo rondas máximas de iteración</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">craft-anything-cli rebuild - "Juego de Pong en Rust con Macroquad" --rounds 2</pre>
+        </div>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>CLI — Continuar refinando un proyecto en una carpeta existente</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">craft-anything-cli rebuild https://example.com "Cambia el color de la cabecera a azul marino" --continue-in "~/Documents/Craft Anything/MiWeb"</pre>
+        </div>
+
+        <h3>9.3. Integración de Craft Anything como servidor MCP</h3>
+        <p>
+          El protocolo <strong>Model Context Protocol (MCP)</strong> es un estándar abierto impulsado por Anthropic que permite a modelos de lenguaje conectarse a herramientas locales de forma segura. Al ejecutar:
+        </p>
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>CLI — Iniciar servidor Model Context Protocol (MCP)</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">craft-anything-cli mcp</pre>
+        </div>
+        <p>
+          Craft Anything expone sus 320 herramientas de ingeniería inversa y análisis como funciones MCP disponibles para cualquier cliente compatible (como <strong>Claude Desktop</strong>). Esto permite que el agente solicite mediciones de pantalla, extracción de colores o desensamblado directamente desde su propio entorno conversacional.
+        </p>
+
+        <h3>9.4. Gestión de proyectos existentes y carpetas personalizadas</h3>
+        <p>Mediante banderas de línea de comandos, es posible gestionar proyectos fuera de las rutas predeterminadas:</p>
+        <ul>
+          <li><code>--project-folder &lt;ruta&gt;</code>: Especifica la ubicación exacta donde se almacenará el proyecto y su subdirectorio <code>app/</code>.</li>
+          <li><code>--existing edit</code>: Indica al agente que no cree un subdirectorio aislado, sino que modifique y refactorice directamente los archivos de una base de código preexistente en dicha carpeta.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ==================== PESTAÑA 6: PRÁCTICA: PROYECTO KANBAN ==================== -->
+    <section class="tab-panel" id="sec-6" data-t="PRÁCTICA: PROYECTO KANBAN">
+      <div class="card">
+        <h2>12. Proyecto Integrador: Recreación Completa de una Aplicación Web Moderna</h2>
+        <p>
+          Para articular de manera práctica todos los conocimientos instruccionales adquiridos, este proyecto integrador acompaña al lector paso a paso en la recreación integral de un <strong>panel de control interactivo para la gestión de proyectos y tareas (tablero tipo Kanban)</strong>.
+        </p>
+
+        <h3>12.1. Definición del objetivo y recopilación de evidencias iniciales</h3>
+        <ul>
+          <li><strong>Objetivo de referencia:</strong> Un sitio web público o página de demostración que presenta un tablero de productividad con tres columnas (<em>Por hacer</em>, <em>En curso</em>, <em>Completado</em>), tarjetas con títulos y etiquetas de prioridad, y una barra superior con estadísticas de progreso.</li>
+          <li><strong>Parámetros del proyecto:</strong>
+            <ul>
+              <li>Modo de operación: <strong>Clean-room estricto</strong>.</li>
+              <li>Interfaz de usuario: <strong>Modo Simple</strong>.</li>
+              <li>Pila tecnológica seleccionada: <strong>React con TypeScript</strong>, empaquetado rápido mediante <strong>Vite</strong> y estilos mediante <strong>Tailwind CSS</strong>.</li>
+            </ul>
+          </li>
+        </ul>
+
+        <h3>12.2. Ejecución del ciclo completo guiado en Modo Simple</h3>
+        <ol>
+          <li>Inicie Craft Anything y constate que el indicador marque <strong>Clean-room</strong>.</li>
+          <li>Introduzca la URL de referencia en la casilla de destino (o seleccione una plantilla local).</li>
+          <li>Escriba el prompt maestro en el cuadro central:</li>
+        </ol>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Maestro Proyecto Integrador — Tablero Kanban en React + TypeScript + Vite</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Recrea este panel de productividad como una aplicación web moderna utilizando React, TypeScript y Tailwind CSS con Vite. Implementa las tres columnas de tarjetas Kanban, permite añadir nuevas tarjetas mediante un modal interactivo, haz que las tarjetas puedan moverse entre columnas y almacena todo el estado en LocalStorage para no perder datos al recargar. Asegura un diseño limpio con tipografía Inter y bordes suaves.</pre>
+        </div>
+
+        <ol start="4">
+          <li>Presione <strong>Start</strong>.</li>
+          <li>Observe la fase <strong>Study</strong>: el sistema genera capturas de pantalla de la interfaz a tres anchos ($375\text{ px}$, $768\text{ px}$ y $1440\text{ px}$), cataloga los colores de fondo, los bordes y las fuentes tipográficas en <code>capture/</code>.</li>
+          <li>En la fase <strong>Build</strong>, autorice la instalación de las dependencias requeridas cuando aparezca la tarjeta en pantalla. El agente redactará los componentes modulares (<code>Column.tsx</code>, <code>Card.tsx</code>, <code>Board.tsx</code>, <code>useLocalStorage.ts</code>) dentro de <code>app/src/</code>.</li>
+          <li>En la fase <strong>Check</strong>, revise el informe de disparidad visual: el sistema validará que los elementos interactivos respondan y que la distribución de columnas sea adecuada.</li>
+        </ol>
+
+        <h3>12.3. Auditoría en la carpeta de evidencias (<code>checks</code> e <code>investigation.cany</code>)</h3>
+        <p>Abra el explorador de archivos y examine la carpeta del proyecto creada en <code>Documents/Craft Anything/tablero-kanban</code>:</p>
+        <ul>
+          <li>Abra el archivo <code>craft.json</code>: comprobará el registro completo de la petición inicial, los parámetros del modelo y el historial de iteraciones.</li>
+          <li>Examine <code>checks/</code>: allí encontrará las imágenes de comparación visual donde las discrepancias de diseño se resaltan visualmente.</li>
+          <li>Inspeccione la base de datos <code>investigation.cany/</code>: observará el desglose estructurado de todas las observaciones confirmadas por las herramientas analíticas durante la inspección.</li>
+        </ul>
+
+        <h3>12.4. Refinamiento interactivo mediante prompts incrementales</h3>
+        <p>Con la aplicación en estado <strong>Ready</strong>, presione <strong>Open Preview</strong> para comprobar el funcionamiento del tablero en su navegador. Luego, solicite mejoras específicas en la caja de refinamiento:</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Primera iteración — Filtro por etiquetas en tiempo real</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Añade una barra de búsqueda en la parte superior que permita filtrar tarjetas por título o etiqueta en tiempo real.</pre>
+        </div>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Segunda iteración — Diseño responsivo móvil (&lt; 768px)</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">En pantallas móviles de menos de 768px, muestra las tres columnas como pestañas navegables horizontales en lugar de apilarlas verticalmente.</pre>
+        </div>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Tercera iteración — Exportación de datos a JSON</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Añade un botón en la barra superior que permita exportar todas las tareas del tablero a un archivo JSON descargable.</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Lista de Comprobación Interactiva de Práctica (Progreso Guardado)</h3>
+        <p>Marca cada paso a medida que completes tu práctica. Tu progreso se conserva automáticamente en el navegador:</p>
+        <label class="checklist-item"><input type="checkbox" data-check="chk-1"> <span>Ejecuté <code>craft-anything-cli doctor</code> y verifiqué mi agente local (Claude, Copilot o Grok).</span></label>
+        <label class="checklist-item"><input type="checkbox" data-check="chk-2"> <span>Comprobé que el indicador <strong>Clean-room</strong> está activo antes de analizar sitios de terceros.</span></label>
+        <label class="checklist-item"><input type="checkbox" data-check="chk-3"> <span>Completé el ciclo Study → Build → Check → Ready en el Proyecto Integrador Kanban.</span></label>
+        <label class="checklist-item"><input type="checkbox" data-check="chk-4"> <span>Audité los directorios <code>capture/</code>, <code>checks/</code>, <code>app/</code> y el manifiesto <code>craft.json</code>.</span></label>
+        <label class="checklist-item"><input type="checkbox" data-check="chk-5"> <span>Apliqué las tres iteraciones de refinamiento incremental y verifiqué la vista a $375\text{ px}$.</span></label>
+      </div>
+    </section>
+
+    <!-- ==================== PESTAÑA 7: PROMPTS ==================== -->
+    <section class="tab-panel" id="sec-7" data-t="PROMPTS">
+      <div class="card">
+        <h2>15. Catálogo Maestro de Prompts (Todos los Prompts del Tutorial y Dónde se Emplean)</h2>
+        <p>
+          En esta pestaña se recopilan <strong>absolutamente todos los prompts</strong> incluidos en el tutorial —tanto los de los procedimientos prácticos, resolución de problemas y proyecto integrador como los 12 prompts del Catálogo Maestro— junto con una descripción clara de <strong>dónde y cuándo se emplea cada uno</strong>. Todos disponen de su botón <strong>COPIAR</strong>.
+        </p>
+
+        <h3>15.1. Prompts para inicialización y estudio de proyectos (Catálogo Maestro)</h3>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt 1: Recreación de sitio web institucional en sala limpia</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Actúa como ingeniero frontend sénior. Recrea este sitio web desde cero utilizando una arquitectura de sala limpia. Analiza las capturas visuales y las métricas extraídas en capture/ para reproducir la disposición de elementos, la tipografía y los espaciados. No utilices activos con derechos de autor; genera textos de ejemplo coherentes y utiliza iconos vectoriales de código abierto.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> En la caja de solicitud principal (<em>"What do you want to make?"</em>) del Modo Simple al iniciar la Fase 1 (Study) y Fase 2 (Build) sobre una URL institucional o corporativa de terceros bajo Modo Clean-Room.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt 2: Creación de aplicación basada en una herramienta de escritorio</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Examina las capturas de la ventana de esta aplicación. Recrea su funcionalidad esencial como una herramienta moderna de escritorio en Python con interfaz gráfica Tkinter/CustomTkinter. Organiza el proyecto con un diseño modular separando la lógica de cálculo de los componentes visuales.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> Al seleccionar un archivo ejecutable local mediante <em>Choose a file…</em> para emular su interfaz gráfica y funcionalidad en Python sin inspeccionar código propietario.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt 3: Exploración preliminar de un binario sin construcción (Just Look Inside)</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Realiza únicamente un análisis exploratorio en Modo Profundo sobre este binario. Enumera las cadenas de texto (strings) más relevantes, identifica las bibliotecas dinámicas enlazadas y genera un resumen en lenguaje natural sobre qué hace el programa, sin crear código nuevo.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> En el Modo Avanzado con <strong>Deep Mode</strong> activado (o consultas de análisis con modelos LLM en <em>Settings → AI</em>) cuando se audita un binario propio o autorizado sin iniciar la fase Build.</p>
+
+        <h3>15.2. Prompts para dirección técnica y selección de stack tecnológico</h3>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt 4: Selección de stack moderno para frontend (Next.js y Tailwind)</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Recrea la interfaz de usuario objetivo utilizando Next.js con el App Router, TypeScript y Tailwind CSS. Asegúrate de estructurar los componentes en carpetas reutilizables (components/ui), mantener un alto estándar de accesibilidad (atributos ARIA) y optimizar el rendimiento de renderizado.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> En la petición inicial de construcción cuando se requiere que el agente (Claude Code, Copilot o Grok) estructure una aplicación web escalable en <code>app/</code> con Next.js y App Router.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt 5: Recreación de lógica en lenguaje Rust nativo</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Construye la réplica de este sistema utilizando Rust puro. Configura el archivo Cargo.toml con dependencias estables y bien mantenidas. Prioriza la seguridad de memoria, el manejo de errores idiomático mediante Result y Option, y documenta cada módulo con comentarios explicativos.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> Al recrear herramientas de línea de comandos, motores de procesamiento o aplicaciones de escritorio de alto rendimiento donde se exige compilación nativa con Cargo.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt 6: Recreación de videojuego 2D multiplataforma</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Recrea la mecánica de juego observada utilizando el motor Godot 4 con GDScript (o alternativamente Macroquad en Rust). Implementa el bucle de juego principal, el sistema de colisiones por capas, la gestión de puntuación y una pantalla de reinicio tras perder la partida.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> En el selector de modo juego al iniciar la recreación de un videojuego 2D a partir de una referencia visual o paquete de recursos inspeccionado.</p>
+
+        <h3>15.3. Prompts para corrección estética, maquetación y diseño responsivo</h3>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt 7: Corrección de disparidad visual en pantallas móviles</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Revisa los informes de discrepancia en la carpeta checks/. El menú de navegación principal se desborda en pantallas con ancho de 375px. Modifica el archivo de estilos o las clases CSS para que los enlaces se oculten tras un botón de menú desplegable en resoluciones móviles.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> En la <strong>caja de refinamiento inferior</strong> durante la Fase 4 (Ready) tras detectar en la Fase 3 (Check) que la captura a $375\text{ px}$ presenta desbordes en el menú.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt 8: Adaptación y pulido de paleta de colores</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Ajusta la paleta cromática de la aplicación. Reemplaza todos los tonos de fondo secundarios para que sigan una escala de grises neutros (#F3F4F6 y #1F2937 en modo oscuro) y haz que el color de énfasis principal sea un azul cobalto (#1E40AF).</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> En la caja de refinamiento inferior o en la instrucción inicial para personalizar la identidad visual y diferenciar cromáticamente la nueva creación respecto al software original.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt 9: Mejora de jerarquía y consistencia tipográfica</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Estandariza los tamaños de fuente en todos los encabezados. Los títulos H1 deben utilizar una fuente sans-serif geométrica con un interlineado amplio, y los párrafos de cuerpo deben garantizar un contraste suficiente que cumpla con los estándares de legibilidad WCAG AA.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> En la etapa de refinamiento estético tras revisar la previsualización web o de escritorio para asegurar accesibilidad visual WCAG AA.</p>
+
+        <h3>15.4. Prompts para depuración de comportamiento y lógica funcional</h3>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt 10: Persistencia de datos en el cliente</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Modifica la gestión del estado para que los datos creados por el usuario (listados, preferencias o formularios) se guarden automáticamente en LocalStorage. Si el usuario recarga la página, los datos deben recuperarse sin pérdidas.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> En el cuadro de refinamiento cuando la réplica visual ya funciona pero los formularios o listas pierden su estado al refrescar el navegador.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt 11: Adición de modo oscuro interactivo</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Añade un interruptor visual en la barra superior para alternar entre tema claro y tema oscuro. Vincula el estado a la clase dark en el elemento raíz y guarda la preferencia del usuario en el navegador.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> En la caja de refinamiento incremental de aplicaciones web para incorporar soporte de tema claro/oscuro persistente.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt 12: Depuración de errores en instalación de paquetes</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Se ha producido un error durante el comando de compilación debido a una incompatibilidad de versiones en una dependencia. Examina el archivo de registro en inbox/, sustituye la versión problemática en el manifiesto de paquetes por una alternativa compatible y vuelve a ejecutar la compilación.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> Cuando falla un paso de compilación en la Fase 2 (Build) y se registra un conflicto de dependencias en <code>inbox/</code> o en la consola de agentes.</p>
+
+        <h3>15.5. Prompts de los Procedimientos Prácticos (Sección 7), Troubleshooting (Sección 11) y Proyecto Integrador (Sección 12)</h3>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Procedimiento A (Inicial) — Clonar y adaptar sitio web con Astro y Tailwind</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Recrea este sitio web como una aplicación moderna utilizando Astro y Tailwind CSS. Mantén la jerarquía de navegación y la distribución visual de secciones, pero sustituye el nombre de la empresa por Servicios Globales y utiliza imágenes de muestra libres de derechos.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> Paso 3 del <strong>Procedimiento A (Sección 7.1)</strong>, en la caja central de Modo Simple tras introducir la URL objetivo.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Procedimiento A (Refinamiento) — Barra de navegación con desenfoque</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Haz que la barra de navegación superior tenga un fondo semitransparente con efecto de desenfoque y añade un botón de contacto en color verde esmeralda (#10B981).</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> Paso 9 del <strong>Procedimiento A (Sección 7.1)</strong>, en el cuadro inferior de refinamiento una vez abierta la vista previa (<em>Open Preview</em>).</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Procedimiento B — Recrear juego Snake en Rust con Macroquad</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Recrea el clásico juego de la serpiente (Snake) en Rust utilizando la biblioteca de gráficos 2D Macroquad. El juego debe responder a las flechas del teclado, incluir detección de colisiones contra los bordes de la pantalla y contra el propio cuerpo de la serpiente, marcador de puntos en pantalla y reinicio instantáneo con la tecla R.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> Paso 2 del <strong>Procedimiento B (Sección 7.2)</strong>, en el Modo Simple seleccionando el modo juego sin archivo binario previo.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Procedimiento C — Emular utilidad de escritorio en Python con CustomTkinter</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Recrea la interfaz y funciones de cálculo de esta utilidad como una aplicación de escritorio moderna en Python utilizando la biblioteca CustomTkinter. Asegura un diseño con esquinas redondeadas y soporte nativo para teclado numérico.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> Paso 3 del <strong>Procedimiento C (Sección 7.3)</strong>, tras elegir un archivo ejecutable local con <em>Choose a file…</em> y manteniendo el Modo Profundo apagado.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Troubleshooting (Sección 11.3) — Ajuste de cuadrícula CSS a 375px</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Ajusta la cuadrícula CSS para que los elementos se organicen en una sola columna en pantallas de menos de 768px de ancho y añade un espaciado lateral uniforme de 16px.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> En el cuadro de refinamiento durante la resolución de problemas (<strong>Sección 11.3</strong>) cuando la fase <code>Check</code> reporta baja similitud por elementos desbordados a $375\text{ px}$.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Proyecto Integrador (Inicial) — Tablero Kanban React + TypeScript + Vite</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Recrea este panel de productividad como una aplicación web moderna utilizando React, TypeScript y Tailwind CSS con Vite. Implementa las tres columnas de tarjetas Kanban, permite añadir nuevas tarjetas mediante un modal interactivo, haz que las tarjetas puedan moverse entre columnas y almacena todo el estado en LocalStorage para no perder datos al recargar. Asegura un diseño limpio con tipografía Inter y bordes suaves.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> Paso 3 del <strong>Proyecto Integrador (Sección 12.2)</strong>, en el cuadro central del Modo Simple para construir la aplicación Kanban completa.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Proyecto Integrador (1.ª Iteración) — Barra de búsqueda y filtro en tiempo real</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Añade una barra de búsqueda en la parte superior que permita filtrar tarjetas por título o etiqueta en tiempo real.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> Primera iteración de refinamiento del <strong>Proyecto Integrador (Sección 12.4)</strong> en estado <em>Ready</em>.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Proyecto Integrador (2.ª Iteración) — Columnas como pestañas horizontales en móvil</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">En pantallas móviles de menos de 768px, muestra las tres columnas como pestañas navegables horizontales en lugar de apilarlas verticalmente.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> Segunda iteración de refinamiento del <strong>Proyecto Integrador (Sección 12.4)</strong> para optimizar la ergonomía móvil.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Proyecto Integrador (3.ª Iteración) — Exportar tareas del tablero a JSON</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Añade un botón en la barra superior que permita exportar todas las tareas del tablero a un archivo JSON descargable.</pre>
+        </div>
+        <p><strong>Dónde se emplea:</strong> Tercera iteración de refinamiento del <strong>Proyecto Integrador (Sección 12.4)</strong> para añadir portabilidad de datos.</p>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompts de Ejemplos Rápidos (Preguntas 9 y 18 + CLI Rebuild)</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Utiliza un tema oscuro y cambia el color principal a verde esmeralda
+Recrea este sitio web con HTML y Tailwind CSS
+Juego de Pong en Rust con Macroquad
+Cambia el color de la cabecera a azul marino
+Recrea este sitio</pre>
+        </div>
+        <p><strong>Dónde se emplean:</strong> En la caja de refinamiento rápido (Pregunta 9) y como argumentos de instrucción directa del comando <code>craft-anything-cli rebuild</code> en terminal (Sección 9.2 y Pregunta 18).</p>
+      </div>
+    </section>
+
+    <!-- ==================== PESTAÑA 8: 33 Preguntas (Q&A) ==================== -->
+    <section class="tab-panel" id="sec-8" data-t="33 Preguntas (Q&A)">
+      <div class="card">
+        <h2>14. Banco Maestro de Preguntas y Respuestas (33 P&amp;R Ordenadas por Nivel de Dificultad)</h2>
+        <p>Pulsa sobre cualquier pregunta para desplegar su respuesta o utiliza los controles inferiores para expandir o contraer las 33 preguntas de una vez:</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+          <button type="button" class="btn-tool" id="btn-expand-all-qa">➕ Expandir las 33 Respuestas</button>
+          <button type="button" class="btn-tool" id="btn-collapse-all-qa">➖ Contraer Todas</button>
+        </div>
+
+        <!-- NIVEL 1 -->
+        <h3>14.1. Nivel 1 — Básico (Preguntas 1 a 11)</h3>
+
+        <details class="qa-item" open>
+          <summary><span><span class="badge emerald">Nivel 1</span> Pregunta 1: ¿Qué es Craft Anything y cuál es su objetivo principal?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Es una plataforma de código abierto construida en Rust que permite entender cómo funciona cualquier software (sitio web, aplicación o videojuego) e instruir a un agente de inteligencia artificial para construir una versión propia equivalente desde cero.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge emerald">Nivel 1</span> Pregunta 2: ¿Es necesario tener experiencia previa en programación para usarlo?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> No. La interfaz incluye un Modo Simple pensado para principiantes absolutos, donde basta con indicar la URL o aplicación de destino y redactar en lenguaje natural lo que se desea crear.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge emerald">Nivel 1</span> Pregunta 3: ¿Qué diferencia existe entre clonar un repositorio y recrear software con Craft Anything?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Clonar un repositorio descarga una copia exacta de un código fuente existente. Recrear con Craft Anything consiste en observar una aplicación y programar un proyecto completamente nuevo e independiente que emula sus funciones públicas.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge emerald">Nivel 1</span> Pregunta 4: ¿Por qué el Modo Clean-Room viene activado de forma predeterminada?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Para garantizar que el proceso de recreación cumpla con los estándares legales y éticos de sala limpia, asegurando que el agente solo trabaje a partir de lo que es públicamente visible y sin examinar archivos internos protegidos.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge emerald">Nivel 1</span> Pregunta 5: ¿Cuáles son las cuatro etapas del ciclo de trabajo de la herramienta?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Son <strong>Study</strong> (estudio e inspección de la interfaz original), <strong>Build</strong> (construcción del código por parte de la IA), <strong>Check</strong> (comparación visual y técnica de similitud) y <strong>Ready</strong> (previsualización, prueba y refinamiento interactivo).</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge emerald">Nivel 1</span> Pregunta 6: ¿En qué carpeta se guardan los proyectos que voy creando?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Por defecto, los proyectos se almacenan en la carpeta de usuario en <code>Documents/Craft Anything</code>. El código fuente final generado se ubica dentro del subdirectorio <code>app/</code>.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge emerald">Nivel 1</span> Pregunta 7: ¿Qué es una tarjeta de aprobación en la bandeja de entrada (inbox)?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Es una notificación visual interactiva que se genera cuando el agente necesita autorización del usuario para ejecutar una acción en el sistema, como instalar paquetes o compilar código.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge emerald">Nivel 1</span> Pregunta 8: ¿Tiene algún coste económico utilizar la plataforma Craft Anything?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> El motor y las herramientas de Craft Anything son 100% gratuitos y de código abierto (licencias MIT y Apache-2.0). No obstante, el agente de IA que elija vincular (como Claude de Anthropic) puede requerir su propia suscripción o cuenta de uso.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge emerald">Nivel 1</span> Pregunta 9: ¿Puedo recrear una aplicación y pedirle que use otros colores o fuentes?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Sí. Basta con indicarlo en la petición inicial o en la caja de refinamiento (por ejemplo: <em>"Utiliza un tema oscuro y cambia el color principal a verde esmeralda"</em>).</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge emerald">Nivel 1</span> Pregunta 10: ¿Qué significa el porcentaje de similitud que muestra la aplicación?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Es una métrica calculada durante la fase Check que compara matemáticamente la apariencia visual de la réplica frente a la aplicación original a diferentes anchos de pantalla.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge emerald">Nivel 1</span> Pregunta 11: ¿Qué sucede si el sitio web original tiene varias páginas?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> En el estudio inicial se analiza la página principal indicada. Posteriormente, a través de la caja de refinamiento, puede solicitar al agente que examine rutas adicionales y añada nuevas vistas al proyecto.</p></div>
+        </details>
+
+        <!-- NIVEL 2 -->
+        <h3>14.2. Nivel 2 — Avanzado (Preguntas 12 a 22)</h3>
+
+        <details class="qa-item">
+          <summary><span><span class="badge amber">Nivel 2</span> Pregunta 12: ¿Por qué Craft Anything integra 320 herramientas nativas en lugar de usar solo un modelo de lenguaje?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Los modelos de lenguaje pueden generar errores o aproximaciones imprecisas cuando no tienen datos exactos. Las 320 herramientas nativas extraen datos empíricos objetivos (medidas DOM, colores hexadecimales, árboles de dependencias) para que el agente programe basándose en hechos verificados.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge amber">Nivel 2</span> Pregunta 13: ¿Cómo se comunica la plataforma con Claude Code de forma local?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Invoca directamente el ejecutable oficial <code>claude</code> instalado en el ordenador del usuario, aprovechando la sesión ya autenticada localmente sin necesidad de almacenar claves de API en la plataforma.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge amber">Nivel 2</span> Pregunta 14: ¿Qué es el protocolo ACP y qué ventajas ofrece?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> El <em>Agent Client Protocol</em> es una interfaz estandarizada que permite a Craft Anything conectarse con múltiples agentes de código como GitHub Copilot CLI, Grok Build, Gemini CLI, Qwen Code, Maki o Devin de manera interoperable.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge amber">Nivel 2</span> Pregunta 15: ¿Por qué se verifican las aplicaciones a tres anchos de pantalla específicos?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Se capturan a $375\text{ px}$ (teléfono móvil), $768\text{ px}$ (tableta) y $1440\text{ px}$ (ordenador de escritorio) para comprobar que la interfaz generada sea completamente responsiva y adaptable a cualquier dispositivo.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge amber">Nivel 2</span> Pregunta 16: ¿Cuál es el propósito del archivo manifiesto <code>craft.json</code>?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Registra el estado integral del proyecto: el objetivo original, las instrucciones iniciales, el historial de iteraciones, los parámetros de configuración y los registros de las pruebas de verificación.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge amber">Nivel 2</span> Pregunta 17: ¿Qué información se almacena en la base de datos <code>investigation.cany</code>?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Almacena todos los registros de evidencia técnica identificados por el motor durante las fases de inspección, junto con sus niveles de certidumbre, cobertura y limitaciones detectadas.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge amber">Nivel 2</span> Pregunta 18: ¿Cómo se puede ejecutar un proceso de reconstrucción completo desde la consola de comandos?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Mediante el subcomando <code>rebuild</code> de la herramienta CLI, indicando el destino y la instrucción entre comillas (por ejemplo: <code>craft-anything-cli rebuild https://example.com "Recrea este sitio"</code>).</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge amber">Nivel 2</span> Pregunta 19: ¿Por qué el Modo Clean-Room no reemplaza un sandbox del sistema operativo?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Porque Clean-Room es una restricción interna sobre qué información lee el motor respecto al objetivo, pero no restringe los permisos de ejecución del agente de IA, el cual opera con los privilegios del usuario local.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge amber">Nivel 2</span> Pregunta 20: ¿Cómo se seleccionan las dependencias en el nuevo proyecto generado?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> El agente de codificación redacta manifiestos nuevos (<code>package.json</code>, <code>Cargo.toml</code>) seleccionando paquetes estables y modernos, garantizando que el proyecto no herede dependencias obsoletas del software original.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge amber">Nivel 2</span> Pregunta 21: ¿Es posible solicitar un framework de desarrollo específico?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Sí. El usuario puede especificar en su instrucción el stack deseado (como Next.js, Astro, Flutter, Godot o Rust puro), y el agente configurará la arquitectura del proyecto conforme a esa indicación.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge amber">Nivel 2</span> Pregunta 22: ¿Para qué sirve iniciar el servidor MCP mediante <code>craft-anything-cli mcp</code>?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Permite exponer las 320 herramientas de inspección técnica como funciones invocables para clientes externos compatibles con el estándar MCP, como Claude Desktop.</p></div>
+        </details>
+
+        <!-- NIVEL 3 -->
+        <h3>14.3. Nivel 3 — PRO (Preguntas 23 a 33)</h3>
+
+        <details class="qa-item">
+          <summary><span><span class="badge rose">Nivel 3</span> Pregunta 23: ¿Cómo colabora el motor de Craft Anything con Ghidra en el Modo Profundo?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Cuando Ghidra está instalado y se opera en Modo Profundo, Craft Anything invoca sus módulos headless para descompilar código binario y obtener representaciones estructuradas en pseudo-C que facilitan la réplica exacta de algoritmos complejos.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge rose">Nivel 3</span> Pregunta 24: ¿Qué diferencia operativa existe entre <code>--project-folder</code> y <code>--existing edit</code>?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> <code>--project-folder</code> redirige la creación del proyecto a un directorio personalizado manteniendo el código en la subcarpeta <code>app/</code>, mientras que <code>--existing edit</code> ordena al agente modificar y refactorizar archivos directamente sobre una base de código existente en la raíz de la carpeta.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge rose">Nivel 3</span> Pregunta 25: ¿Cómo gestiona el analizador de JavaScript los archivos web empaquetados y minificados?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> El analizador integrado de JavaScript busca y procesa archivos de mapas de origen (<em>Source Maps</em>) para reconstruir los nombres de variables, tipos y la estructura modular original previa a la compilación de producción.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge rose">Nivel 3</span> Pregunta 26: ¿Por qué es prudente utilizar la opción de omitir scripts al instalar paquetes de Node.js?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Los scripts de instalación automáticos de paquetes externos pueden ejecutar comandos arbitrarios en el sistema operativo; omitir scripts garantiza que la instalación de dependencias no ejecute código imprevisto durante el proceso de maquetación.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge rose">Nivel 3</span> Pregunta 27: ¿Cómo procesa el motor los recursos de videojuegos desarrollados en motores como Godot, Unity o Unreal?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Identifica contenedores de recursos conocidos (como archivos <code>.pck</code> de Godot, bundles de Unity o paquetes <code>.pak</code> de Unreal) para catalogar texturas, mallas y configuraciones que permitan reconstruir la experiencia con activos libres equivalentes.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge rose">Nivel 3</span> Pregunta 28: ¿Qué función cumple la herramienta <code>core_evidence_browse</code> en proyectos de gran envergadura?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Permite explorar y paginar colecciones extensas de evidencia técnica registradas en <code>investigation.cany</code>, evitando que el volumen masivo de datos sobrecargue el límite de tokens del modelo de lenguaje.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge rose">Nivel 3</span> Pregunta 29: ¿Cómo se asegura la firma de código y notarización en distribuciones para macOS?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Mediante certificados oficiales de desarrollador de Apple, permitiendo que las herramientas del sistema verifiquen la validez de la firma y el ticket de notarización antes de autorizar la apertura del programa.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge rose">Nivel 3</span> Pregunta 30: ¿Qué particularidad arquitectónica presenta el empaquetado Flatpak en comparación con AppImage en Linux?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Flatpak aísla estrictamente la aplicación en un contenedor que no puede lanzar de forma transparente navegadores externos del anfitrión para auditar páginas web, motivo por el cual se prefiere AppImage para flujos web completos.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge rose">Nivel 3</span> Pregunta 31: ¿Cómo se auditan los cambios exactos aplicados en cada ronda de refinamiento incremental?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> El subdirectorio <code>app/</code> se gestiona como un repositorio Git interno; cada instrucción de refinamiento genera un commit específico, permitiendo auditar la diferencia exacta de líneas introducidas mediante comandos estándar de control de versiones.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge rose">Nivel 3</span> Pregunta 32: ¿Cómo previene el motor de Rust bloqueos mutuos (deadlocks) durante análisis multihilo intensivos?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> El diseño interno utiliza primitivas de concurrencia seguras de Rust, tiempos de espera estandarizados y detectores de contención que liberan recursos si una tarea de inspección se prolonga indebidamente.</p></div>
+        </details>
+
+        <details class="qa-item">
+          <summary><span><span class="badge rose">Nivel 3</span> Pregunta 33: ¿Cómo se asegura la total independencia jurídica del código generado en proyectos comerciales?</span></summary>
+          <div class="qa-body"><p><strong>Respuesta:</strong> Manteniendo el Modo Clean-Room activo durante todo el ciclo, documentando el manifiesto <code>craft.json</code> como evidencia de auditoría y asegurando que todos los textos, marcas y activos gráficos utilizados sean de creación propia o provengan de repositorios abiertos.</p></div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ==================== PESTAÑA 9: ERRORES Y SEGURIDAD ==================== -->
+    <section class="tab-panel" id="sec-9" data-t="ERRORES Y SEGURIDAD">
+      <div class="card">
+        <h2>11. Diagnóstico, Resolución de Errores y Solución de Problemas (Troubleshooting)</h2>
+
+        <h3>11.1. Errores de instalación de dependencias y compilación de Rust</h3>
+        <ul>
+          <li><strong>Error de versión insuficiente de Rust:</strong>
+            <ul>
+              <li><em>Mensaje común:</em> <code>error: package requires rustc 1.97 or newer</code>.</li>
+              <li><em>Solución:</em> Actualice el compilador oficial de Rust en su terminal ejecutando <code>rustup update</code>.</li>
+            </ul>
+          </li>
+          <li><strong>Fallo de compilación de interfaz gráfica en Linux:</strong>
+            <ul>
+              <li><em>Mensaje común:</em> Errores al compilar bibliotecas relacionadas con <code>wayland-client</code>, <code>xkbcommon</code> o <code>libgtk-3</code>.</li>
+              <li><em>Solución:</em> Asegúrese de instalar los paquetes de desarrollo correspondientes para Wayland, X11 y GTK3 a través del gestor de software de su distribución (ver comando en la pestaña de Instalación).</li>
+            </ul>
+          </li>
+        </ul>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Terminal — Actualizar compilador Rust a 1.97 o superior</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">rustup update</pre>
+        </div>
+
+        <h3>11.2. Fallos de conexión o permisos con el agente de codificación local</h3>
+        <ul>
+          <li><strong>Comando del agente no encontrado:</strong>
+            <ul>
+              <li><em>Mensaje común:</em> <code>claude: command not found</code> o fallo en la fase <code>Build</code>.</li>
+              <li><em>Solución:</em> Verifique que la herramienta esté instalada globalmente ejecutando <code>claude --version</code> en una consola. Si el comando funciona en una nueva ventana de terminal pero no en Craft Anything, cierre y vuelva a abrir la aplicación para que actualice la variable de entorno <code>PATH</code>.</li>
+            </ul>
+          </li>
+          <li><strong>Expiración de credenciales:</strong>
+            <ul>
+              <li><em>Mensaje común:</em> Error de autenticación durante la generación de código.</li>
+              <li><em>Solución:</em> Abra una terminal y renueve la sesión con <code>claude login</code> o <code>copilot login</code>.</li>
+            </ul>
+          </li>
+        </ul>
+
+        <h3>11.3. Problemas de verificación y discrepancias en las tres resoluciones de pantalla</h3>
+        <ul>
+          <li><strong>Disparidad visual en pantallas móviles:</strong>
+            <ul>
+              <li><em>Síntoma:</em> La fase <code>Check</code> muestra una puntuación de similitud reducida debido a elementos desbordados a $375\text{ px}$.</li>
+              <li><em>Solución:</em> Indique en el cuadro de refinamiento:</li>
+            </ul>
+          </li>
+        </ul>
+
+        <div class="copy-block">
+          <div class="copy-header">
+            <span>Prompt Correctivo — Resolver desborde móvil a 375px</span>
+            <button type="button" class="btn-copy">COPIAR</button>
+          </div>
+          <pre class="copy-content">Ajusta la cuadrícula CSS para que los elementos se organicen en una sola columna en pantallas de menos de 768px de ancho y añade un espaciado lateral uniforme de 16px.</pre>
+        </div>
+
+        <h3>11.4. Advertencias de seguridad en macOS (Gatekeeper / Cuarentena)</h3>
+        <ul>
+          <li><strong>Aviso de verificación en macOS:</strong>
+            <ul>
+              <li><em>Mensaje común:</em> <em>"Apple no puede verificar craft-anything-cli"</em>.</li>
+              <li><em>Solución:</em> Los binarios individuales de terminal descargados vía navegador reciben un atributo de verificación por parte del sistema operativo. Autorice la ejecución abriendo <strong>Ajustes del Sistema → Privacidad y Seguridad → Abrir de todos modos</strong>, o bien ejecute en la terminal el comando de retirada de cuarentena (<code>xattr -d com.apple.quarantine ~/.local/bin/craft-anything-cli</code>).</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>10. Seguridad, Ética y Consideraciones Legales</h2>
+
+        <h3>10.1. Políticas de uso responsable: Ámbitos legítimos de inspección</h3>
+        <p>La recreación de software asistida por inteligencia artificial requiere un marco estricto de responsabilidad por parte del usuario:</p>
+        <ul>
+          <li><strong>Ámbitos legítimos:</strong> Aplicaciones desarrolladas por el propio usuario, software de código abierto, proyectos de dominio público o sistemas sobre los cuales se posea autorización expresa para fines de interoperabilidad, auditoría o aprendizaje técnico.</li>
+          <li><strong>Prohibición de usos indebidos:</strong> Está estrictamente desaconsejado utilizar estas herramientas para intentar eludir medidas de seguridad de software protegido o para sustraer secretos comerciales.</li>
+        </ul>
+
+        <h3>10.2. Protección de propiedad intelectual: Tratamiento de marcas, logotipos y activos</h3>
+        <p>El motor de Craft Anything incluye directivas internas explícitas para evitar la duplicación directa de material protegido:</p>
+        <ul>
+          <li><strong>Salvaguardas de activos visuales:</strong> Las instrucciones del sistema ordenan al agente de codificación no transferir logotipos registrados, marcas comerciales, fotografías protegidas ni textos extensos de la obra original, a menos que el usuario acredite formalmente su titularidad.</li>
+          <li><strong>Generación de elementos sintéticos:</strong> El agente diseña componentes de reemplazo, tipografías abiertas equivalentes y contenidos de texto simulados para asegurar que el producto final sea una creación limpia e independiente.</li>
+        </ul>
+
+        <h3>10.3. Gestión y riesgos en scripts de instalación de paquetes (<code>npm</code>, <code>cargo</code>, <code>pip</code>)</h3>
+        <p>Un principio básico de seguridad técnica que todo principiante debe asimilar: <strong>instalar dependencias de software equivale a ejecutar código en su ordenador</strong>.</p>
+        <ul>
+          <li>Gestores de paquetes en diversos ecosistemas ejecutan scripts de preparación de forma automática al descargar librerías externas.</li>
+          <li>Si un agente descarga paquetes con scripts no verificados, estos scripts podrían ejecutar acciones no deseadas en su sistema operativo.</li>
+          <li><strong>Reglas de protección:</strong>
+            <ol>
+              <li>Supervise con atención cada tarjeta de aprobación en la bandeja <code>inbox</code>.</li>
+              <li>Evite marcar la opción <em>"Permitir siempre para todos los proyectos"</em>.</li>
+              <li>En proyectos web basados en gestores de paquetes donde desee evitar scripts externos automáticos, configure la opción de omitir scripts en las opciones del proyecto.</li>
+            </ol>
+          </li>
+        </ul>
+
+        <h3>10.4. Fronteras técnicas del sistema: DRM, accesos autenticados y controles de acceso</h3>
+        <p>Craft Anything respeta rigurosamente las barreras de protección del software comercial:</p>
+        <ul>
+          <li><strong>Protección de derechos digitales (DRM):</strong> El motor no elude ni modifica tecnologías de gestión de derechos digitales.</li>
+          <li><strong>Respeto a sistemas autenticados:</strong> No elude inicios de sesión privados ni muros de pago.</li>
+          <li><strong>Respeto a sistemas de integridad a bajo nivel:</strong> No interfiere con controladores a nivel de núcleo en videojuegos. Si un contenido requiere credenciales privadas para ser visible, las herramientas de inspección no accederán a él.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ==================== PESTAÑA 10: RESUMEN Y GLOSARIO ==================== -->
+    <section class="tab-panel" id="sec-10" data-t="RESUMEN Y GLOSARIO">
+      <div class="card">
+        <h2>Síntesis Ejecutiva por Capítulos</h2>
+        <ul>
+          <li><strong>Capítulos 1 y 2 (Fundamentos y Arquitectura):</strong> Craft Anything transforma la ingeniería inversa en síntesis generativa asistida por un motor en Rust puro con $320$ herramientas ($300$ internas y $20$ de IA). Separa estrictamente el <strong>Modo Clean-Room</strong> (caja negra legal predeterminada) del <strong>Modo Deep</strong> (descompilación profunda con Ghidra para software propio).</li>
+          <li><strong>Capítulos 3 y 4 (Instalación y Agentes):</strong> Disponible en Windows (MSI/Portable), macOS (DMG notarizado) y Linux (AppImage recomendado sobre Flatpak para flujos web), o compilable con Rust $\ge 1.97$. Se diagnostica con <code>craft-anything-cli doctor</code> y orquesta a Claude Code, GitHub Copilot CLI (vía ACP), Grok Build y modelos locales.</li>
+          <li><strong>Capítulos 5, 6 y 7 (Interfaces, 4 Fases y Procedimientos):</strong> Ofrece Modo Simple, Modo Avanzado y paleta <code>Ctrl+K</code> / <code>Cmd+K</code>. Ejecuta siempre <strong>Study → Build → Check → Ready</strong> verificando resoluciones de $375\text{ px}$, $768\text{ px}$ y $1440\text{ px}$ para recrear webs, juegos 2D y utilidades de escritorio.</li>
+          <li><strong>Capítulos 8, 9, 10, 11 y 12 (Modo Profundo, CLI/MCP, Seguridad y Práctica):</strong> Permite automatización por consola con <code>rebuild</code>, exposición como servidor MCP (<code>craft-anything-cli mcp</code>), control ético de dependencias y auditoría completa mediante <code>craft.json</code>, <code>checks/</code> e <code>investigation.cany/</code>.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>13. Glosario Técnico Exhaustivo para Principiantes</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Término Técnico</th>
+                <th>Definición Clara y Didáctica</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>ACP (Agent Client Protocol)</strong></td>
+                <td>Protocolo estándar de comunicación que permite a diferentes agentes de inteligencia artificial (Copilot, Gemini, Grok, etc.) interactuar con herramientas externas de desarrollo y depuración de software.</td>
+              </tr>
+              <tr>
+                <td><strong>AppImage</strong></td>
+                <td>Formato de distribución de aplicaciones para sistemas Linux que reúne el programa y todas sus librerías en un único archivo ejecutable sin alterar el sistema operativo.</td>
+              </tr>
+              <tr>
+                <td><strong>Árbol DOM (Document Object Model)</strong></td>
+                <td>Representación jerárquica y estructurada de todos los textos, imágenes, botones y contenedores que componen una página web.</td>
+              </tr>
+              <tr>
+                <td><strong>Bytecode</strong></td>
+                <td>Formato de instrucciones intermedias generado por compiladores de lenguajes como Java o .NET, diseñado para ser ejecutado por una máquina virtual y no por el procesador físico directamente.</td>
+              </tr>
+              <tr>
+                <td><strong>Cargo</strong></td>
+                <td>Gestor oficial de paquetes, dependencias y sistema de compilación del lenguaje de programación Rust.</td>
+              </tr>
+              <tr>
+                <td><strong>Clean-Room (Sala Limpia)</strong></td>
+                <td>Metodología de ingeniería de software que reconstruye un sistema basándose únicamente en su diseño exterior y comportamiento observable, sin acceder jamás al código fuente privado de la obra original.</td>
+              </tr>
+              <tr>
+                <td><strong>Decompilador</strong></td>
+                <td>Herramienta técnica que procesa código binario compilado e intenta reconstruir una versión legible en lenguaje de alto nivel (como C o pseudo-C).</td>
+              </tr>
+              <tr>
+                <td><strong>Deep Mode (Modo Profundo)</strong></td>
+                <td>Modo de operación en Craft Anything que habilita las 320 herramientas nativas para examinar a fondo archivos binarios, flujos de llamadas y estructuras internas para proyectos propios o autorizados.</td>
+              </tr>
+              <tr>
+                <td><strong>Desensamblador</strong></td>
+                <td>Programa que traduce el código máquina binario a instrucciones nemotécnicas legibles en lenguaje ensamblador específicas de la arquitectura de la computadora.</td>
+              </tr>
+              <tr>
+                <td><strong>Gestión de Derechos Digitales (DRM)</strong></td>
+                <td>Tecnologías y mecanismos de control de acceso implementados por creadores de software y contenido para regular el uso y distribución de obras digitales.</td>
+              </tr>
+              <tr>
+                <td><strong>Ghidra</strong></td>
+                <td>Suite de análisis de software e ingeniería inversa de código abierto desarrollada para la investigación y descompilación de código en múltiples arquitecturas de procesador.</td>
+              </tr>
+              <tr>
+                <td><strong>MCP (Model Context Protocol)</strong></td>
+                <td>Estándar de interoperabilidad abierta que permite a modelos de lenguaje invocar herramientas locales y consultar fuentes de datos estructuradas de manera segura.</td>
+              </tr>
+              <tr>
+                <td><strong>Notarización de Apple</strong></td>
+                <td>Proceso de seguridad automatizado en el cual Apple examina un programa antes de su distribución para certificar la ausencia de componentes dañinos y firmarlo digitalmente.</td>
+              </tr>
+              <tr>
+                <td><strong>Pseudo-C</strong></td>
+                <td>Representación intermedia generada por un descompilador que se asemeja a la sintaxis del lenguaje C para facilitar la comprensión humana de un algoritmo binario.</td>
+              </tr>
+              <tr>
+                <td><strong>Rust</strong></td>
+                <td>Lenguaje de programación moderno caracterizado por su alto rendimiento, concurrencia eficiente y seguridad estricta de memoria sin requerir un recolector de basura.</td>
+              </tr>
+              <tr>
+                <td><strong>Sandboxing (Aislamiento de procesos)</strong></td>
+                <td>Técnica de seguridad informática que ejecuta aplicaciones dentro de un entorno restringido para evitar que realicen cambios no autorizados en el sistema anfitrión.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== PESTAÑA 11: FUENTES ==================== -->
+    <section class="tab-panel" id="sec-11" data-t="FUENTES">
+      <div class="card">
+        <h2>16. Directorio de Fuentes Fiables y Documentación Oficial</h2>
+        <p>
+          Para consultar los recursos oficiales del proyecto, los manuales de arquitectura y las especificaciones técnicas descritas en este tutorial, acuda a las siguientes fuentes oficiales. Cada URL cuenta con su botón para copiar la dirección exacta y el botón obligatorio <strong>«Abrir enlace en nueva ventana»</strong>:
+        </p>
+
+        <h3>1. Repositorio Oficial de Craft Anything en GitHub</h3>
+        <p>Repositorio central de código abierto que contiene el código fuente completo en Rust, instaladores oficiales, guías de contribución y seguimiento de versiones.</p>
+        <div class="url-card">
+          <div class="url-code">https://github.com/storytold/craft-anything</div>
+          <div class="url-actions">
+            <a href="https://github.com/storytold/craft-anything" target="_blank" rel="noopener noreferrer" class="btn-open-url">Abrir enlace en nueva ventana ↗</a>
+            <button type="button" class="btn-copy" data-copy-text="https://github.com/storytold/craft-anything">COPIAR URL</button>
+          </div>
+        </div>
+
+        <h3>2. Página Oficial de Lanzamientos e Instaladores</h3>
+        <p>Distribución oficial de instaladores firmados y notarizados para Windows (<code>.msi</code> y portables), macOS (<code>.dmg</code> y binarios CLI) y Linux (AppImage, deb, rpm, Flatpak y tarballs).</p>
+        <div class="url-card">
+          <div class="url-code">https://github.com/storytold/craft-anything/releases</div>
+          <div class="url-actions">
+            <a href="https://github.com/storytold/craft-anything/releases" target="_blank" rel="noopener noreferrer" class="btn-open-url">Abrir enlace en nueva ventana ↗</a>
+            <button type="button" class="btn-copy" data-copy-text="https://github.com/storytold/craft-anything/releases">COPIAR URL</button>
+          </div>
+        </div>
+
+        <div class="url-card">
+          <div class="url-code">https://github.com/storytold/craft-anything/releases/latest</div>
+          <div class="url-actions">
+            <a href="https://github.com/storytold/craft-anything/releases/latest" target="_blank" rel="noopener noreferrer" class="btn-open-url">Abrir enlace en nueva ventana ↗</a>
+            <button type="button" class="btn-copy" data-copy-text="https://github.com/storytold/craft-anything/releases/latest">COPIAR URL</button>
+          </div>
+        </div>
+
+        <h3>3. Plataforma y Comunidad Oficial de ArtCraft</h3>
+        <p>Comunidad abierta donde creadores, desarrolladores y diseñadores comparten proyectos, reportan incidencias y colaboran en el desarrollo del ecosistema Craft.</p>
+
+        <div class="url-card">
+          <div><strong>Portal Principal de ArtCraft:</strong></div>
+          <div class="url-code">https://getartcraft.com/</div>
+          <div class="url-actions">
+            <a href="https://getartcraft.com/" target="_blank" rel="noopener noreferrer" class="btn-open-url">Abrir enlace en nueva ventana ↗</a>
+            <button type="button" class="btn-copy" data-copy-text="https://getartcraft.com/">COPIAR URL</button>
+          </div>
+        </div>
+
+        <div class="url-card">
+          <div><strong>Catálogo de Aplicaciones Creativas:</strong></div>
+          <div class="url-code">https://getartcraft.com/apps</div>
+          <div class="url-actions">
+            <a href="https://getartcraft.com/apps" target="_blank" rel="noopener noreferrer" class="btn-open-url">Abrir enlace en nueva ventana ↗</a>
+            <button type="button" class="btn-copy" data-copy-text="https://getartcraft.com/apps">COPIAR URL</button>
+          </div>
+        </div>
+
+        <div class="url-card">
+          <div><strong>Servidor Oficial de la Comunidad en Discord:</strong></div>
+          <div class="url-code">https://discord.gg/artcraft</div>
+          <div class="url-actions">
+            <a href="https://discord.gg/artcraft" target="_blank" rel="noopener noreferrer" class="btn-open-url">Abrir enlace en nueva ventana ↗</a>
+            <button type="button" class="btn-copy" data-copy-text="https://discord.gg/artcraft">COPIAR URL</button>
+          </div>
+        </div>
+
+        <h3>4. Guías Técnicas del Motor y Documentación de Agentes</h3>
+
+        <div class="url-card">
+          <div><strong>Guía de Integración con Claude Code:</strong></div>
+          <div class="url-code">https://github.com/storytold/craft-anything/blob/main/docs/claude-code.md</div>
+          <div class="url-actions">
+            <a href="https://github.com/storytold/craft-anything/blob/main/docs/claude-code.md" target="_blank" rel="noopener noreferrer" class="btn-open-url">Abrir enlace en nueva ventana ↗</a>
+            <button type="button" class="btn-copy" data-copy-text="https://github.com/storytold/craft-anything/blob/main/docs/claude-code.md">COPIAR URL</button>
+          </div>
+        </div>
+
+        <div class="url-card">
+          <div><strong>Guía de Integración con Grok Build:</strong></div>
+          <div class="url-code">https://github.com/storytold/craft-anything/blob/main/docs/grok.md</div>
+          <div class="url-actions">
+            <a href="https://github.com/storytold/craft-anything/blob/main/docs/grok.md" target="_blank" rel="noopener noreferrer" class="btn-open-url">Abrir enlace en nueva ventana ↗</a>
+            <button type="button" class="btn-copy" data-copy-text="https://github.com/storytold/craft-anything/blob/main/docs/grok.md">COPIAR URL</button>
+          </div>
+        </div>
+
+        <div class="url-card">
+          <div><strong>Catálogo de Herramientas de Inspección:</strong></div>
+          <div class="url-code">https://github.com/storytold/craft-anything/blob/main/docs/tools.md</div>
+          <div class="url-actions">
+            <a href="https://github.com/storytold/craft-anything/blob/main/docs/tools.md" target="_blank" rel="noopener noreferrer" class="btn-open-url">Abrir enlace en nueva ventana ↗</a>
+            <button type="button" class="btn-copy" data-copy-text="https://github.com/storytold/craft-anything/blob/main/docs/tools.md">COPIAR URL</button>
+          </div>
+        </div>
+
+        <div class="url-card">
+          <div><strong>Estado y Verificación de Componentes:</strong></div>
+          <div class="url-code">https://github.com/storytold/craft-anything/blob/main/docs/STATUS.md</div>
+          <div class="url-actions">
+            <a href="https://github.com/storytold/craft-anything/blob/main/docs/STATUS.md" target="_blank" rel="noopener noreferrer" class="btn-open-url">Abrir enlace en nueva ventana ↗</a>
+            <button type="button" class="btn-copy" data-copy-text="https://github.com/storytold/craft-anything/blob/main/docs/STATUS.md">COPIAR URL</button>
+          </div>
+        </div>
+
+        <div class="url-card">
+          <div><strong>Hoja de Ruta de Desarrollo (Roadmap):</strong></div>
+          <div class="url-code">https://github.com/storytold/craft-anything/blob/main/docs/ROADMAP.md</div>
+          <div class="url-actions">
+            <a href="https://github.com/storytold/craft-anything/blob/main/docs/ROADMAP.md" target="_blank" rel="noopener noreferrer" class="btn-open-url">Abrir enlace en nueva ventana ↗</a>
+            <button type="button" class="btn-copy" data-copy-text="https://github.com/storytold/craft-anything/blob/main/docs/ROADMAP.md">COPIAR URL</button>
+          </div>
+        </div>
+
+        <h3>5. Enlaces de Referencia y Endpoints Locales Empleados en los Ejemplos</h3>
+        <div class="url-card">
+          <div><strong>Sitio Web de Referencia para Pruebas en Sala Limpia:</strong></div>
+          <div class="url-code">https://example.com</div>
+          <div class="url-actions">
+            <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="btn-open-url">Abrir enlace en nueva ventana ↗</a>
+            <button type="button" class="btn-copy" data-copy-text="https://example.com">COPIAR URL</button>
+          </div>
+        </div>
+
+        <div class="url-card">
+          <div><strong>Endpoint Local para Modelos Compatibles con OpenAI (Ollama / LocalAI):</strong></div>
+          <div class="url-code">http://localhost:11434/v1</div>
+          <div class="url-actions">
+            <a href="http://localhost:11434/v1" target="_blank" rel="noopener noreferrer" class="btn-open-url">Abrir enlace en nueva ventana ↗</a>
+            <button type="button" class="btn-copy" data-copy-text="http://localhost:11434/v1">COPIAR URL</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== PESTAÑA 12: CRÉDITOS ==================== -->
+    <section class="tab-panel" id="sec-12" data-t="CRÉDITOS">
+      <div class="card">
+        <!-- 1. Título de la sección -->
+        <h2>CRÉDITOS</h2>
+
+        <!-- 2. SVG animado compartido con INICIO (visible en primera pantalla) -->
+        <div class="svg-hero-wrapper" id="svg-mount-credits" aria-label="Ilustración animada compartida del ecosistema Craft Anything en la sección de Créditos"></div>
+
+        <div class="svg-controls">
+          <button type="button" class="btn-tool btn-toggle-svg-anim" aria-label="Pausar o reanudar animación del gráfico">⏯️ Pausar / Reanudar Animación</button>
+        </div>
+
+        <!-- 3. Breve descripción de la ilustración -->
+        <p style="text-align:center;color:var(--text-secondary);font-size:0.92rem;max-width:680px;margin:0 auto 16px;">
+          <strong>Descripción de la ilustración:</strong> Diagrama vectorial animado en formato vertical 4:5 que representa la arquitectura integral de <em>Craft Anything</em>: en la parte superior, el escáner empírico en Sala Limpia (<em>Clean-Room</em>) extrayendo árbol DOM, píxeles y evidencias hacia <code>investigation.cany</code>; en el centro, el núcleo hexagonal en Rust con sus 320 herramientas y el ciclo de cuatro fases (<em>Study, Build, Check, Ready</em>); y en la base, la síntesis verificada simultáneamente en las tres resoluciones estándar ($375\text{ px}$, $768\text{ px}$ y $1440\text{ px}$).
+        </p>
+
+        <!-- 4. Nombre del autor (elemento visual más destacado) y 5. Texto «Autor del tutorial» -->
+        <div class="credits-author-box">
+          <div class="credits-author-name">Rubén Sbarsky</div>
+          <div class="credits-author-role">Autor del tutorial</div>
+          <p style="color:var(--text-secondary);margin-bottom:0;">
+            Diseño instruccional, arquitectura pedagógica interactiva y edición técnica de nivel agencia premium.
+          </p>
+        </div>
+
+        <!-- 6. Información adicional pertinente y Fecha/Hora fijas -->
+        <div class="pedagogy-grid">
+          <div class="pedagogy-item">
+            <strong>Fecha y Hora de Creación (Texto Fijo)</strong>
+            12/11/2026 — 17:40:44
+          </div>
+          <div class="pedagogy-item">
+            <strong>Arquitectura Técnica Documentada</strong>
+            Craft Anything (ArtCraft / storytold) — Motor Rust puro con 320 herramientas nativas (Licencias MIT y Apache-2.0).
+          </div>
+          <div class="pedagogy-item">
+            <strong>Optimización Móvil y Accesibilidad</strong>
+            Diseñado bajo estándares Clean Code y optimizado para pantallas móviles desde $360\text{ px}$ (Samsung Galaxy A02s) hasta escritorio $1440\text{ px}$.
+          </div>
+          <!-- 7. Número de versión coincidente con el archivo -->
+          <div class="pedagogy-item">
+            <strong>Número de Versión del Archivo</strong>
+            V001 (<code>tutorial_recrear_cualquier_software_con_ia_V001.html</code>)
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Barra de navegación fija al final de cada pestaña (Anterior / Siguiente) -->
+    <div class="tab-footer-nav" aria-label="Navegación entre pestañas anterior y siguiente">
+      <button type="button" class="btn-step-nav" id="btn-prev-tab">⬅ Anterior</button>
+      <span id="tab-counter-indicator" style="font-size:0.82rem;color:var(--text-secondary);font-weight:700;white-space:nowrap;">1 / 13</span>
+      <button type="button" class="btn-step-nav" id="btn-next-tab">Siguiente ➡</button>
+    </div>
+
+  </main>
+
+  <!-- Botones Flotantes Arrastrables (INICIO y ARRIBA) -->
+  <button type="button" class="floating-draggable" id="float-home" aria-label="Botón flotante arrastrable para ir a la pestaña INICIO" title="Arrastra para mover o pulsa para ir a INICIO">🏠 INICIO</button>
+  <button type="button" class="floating-draggable" id="float-top" aria-label="Botón flotante arrastrable para volver arriba de la pestaña actual" title="Arrastra para mover o pulsa para subir al inicio de la pestaña">⬆ ARRIBA</button>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const STORAGE_KEY = 'craft_anything_tutorial_v001_state';
+      const secs = Array.from(document.querySelectorAll('section.tab-panel'));
+      const chips = Array.from(document.querySelectorAll('nav#top-nav .chip[data-tab]'));
+      const dr = document.querySelector('#dr');
+      const mb = document.querySelector('#mb');
+      const btnPrev = document.getElementById('btn-prev-tab');
+      const btnNext = document.getElementById('btn-next-tab');
+      const tabCounter = document.getElementById('tab-counter-indicator');
+
+      let currentTabIndex = 0;
+      let isSvgPaused = false;
+      let svgTemplateString = '';
+
+      /* ==========================================================================
+         1. GESTIÓN DE PERSISTENCIA SEGURA (CLEAN CODE: SIN EXCEPCIONES NO CONTROLADAS)
+         ========================================================================== */
+      function loadSavedState() {
+        try {
+          const raw = window.localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : {};
+        } catch (_err) {
+          return {};
+        }
+      }
+
+      function saveStatePatch(patch) {
+        try {
+          const current = loadSavedState();
+          const updated = Object.assign({}, current, patch);
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        } catch (_err) {
+          /* Continúa funcionando si localStorage está restringido */
+        }
+      }
+
+      /* ==========================================================================
+         2. PLANTILLA ÚNICA SVG COMPARTIDA (INICIO Y CRÉDITOS) + FALLBACK DATA URI
+         ========================================================================== */
+      function initializeSvgTemplate() {
+        const sourceContainer = document.getElementById('svg-template-source');
+        if (!sourceContainer) return;
+        svgTemplateString = sourceContainer.innerHTML.trim();
+        sourceContainer.remove();
+      }
+
+      function buildUniqueSvgMarkup(instancePrefix) {
+        return svgTemplateString.replace(/__PREFIX__/g, instancePrefix + '_');
+      }
+
+      function mountSvgInstance(containerId, instancePrefix) {
+        const container = document.getElementById(containerId);
+        if (!container || !svgTemplateString) return;
+
+        const uniqueMarkup = buildUniqueSvgMarkup(instancePrefix);
+        container.innerHTML = uniqueMarkup;
+
+        const svgEl = container.querySelector('svg');
+        if (!svgEl) {
+          renderDataUriFallback(container, uniqueMarkup);
+          return;
+        }
+
+        svgEl.classList.toggle('svg-paused', isSvgPaused);
+      }
+
+      function renderDataUriFallback(container, svgMarkup) {
+        const encoded = encodeURIComponent(svgMarkup);
+        const img = document.createElement('img');
+        img.src = 'data:image/svg+xml;utf8,' + encoded;
+        img.alt = 'Ilustración de arquitectura Craft Anything';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        container.innerHTML = '';
+        container.appendChild(img);
+      }
+
+      function ensureVisibleSvgsMounted() {
+        if (currentTabIndex === 0) {
+          const homeMount = document.getElementById('svg-mount-home');
+          if (homeMount && !homeMount.querySelector('svg, img')) {
+            mountSvgInstance('svg-mount-home', 'hero_home');
+          }
+        }
+        if (currentTabIndex === 12) {
+          const creditsMount = document.getElementById('svg-mount-credits');
+          if (creditsMount && !creditsMount.querySelector('svg, img')) {
+            mountSvgInstance('svg-mount-credits', 'hero_credits');
+          }
+        }
+      }
+
+      function toggleSvgAnimationState() {
+        isSvgPaused = !isSvgPaused;
+        document.querySelectorAll('.svg-hero-wrapper svg').forEach(function (svg) {
+          svg.classList.toggle('svg-paused', isSvgPaused);
+        });
+      }
+
+      /* ==========================================================================
+         3. NAVEGACIÓN SPA Y PANEL LATERAL ÍNDICE (#dr y #mb)
+         ========================================================================== */
+      const tg = function (forceState) {
+        dr.classList.toggle('o', forceState);
+        mb.setAttribute('aria-expanded', String(dr.classList.contains('o')));
+      };
+
+      function go(targetIndex) {
+        const validIndex = Math.max(0, Math.min(secs.length - 1, Number(targetIndex) || 0));
+        currentTabIndex = validIndex;
+
+        secs.forEach(function (section, idx) {
+          section.classList.toggle('active', idx === validIndex);
+        });
+
+        chips.forEach(function (chip, idx) {
+          const isCurrent = idx === validIndex;
+          chip.classList.toggle('active', isCurrent);
+          if (isCurrent) {
+            chip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        });
+
+        Array.from(dr.children).forEach(function (linkEl, idx) {
+          linkEl.classList.toggle('on', idx === validIndex);
+        });
+
+        if (validIndex === 0) {
+          mountSvgInstance('svg-mount-home', 'hero_home');
+        } else if (validIndex === 12) {
+          mountSvgInstance('svg-mount-credits', 'hero_credits');
+        }
+
+        updateFooterNavButtons(validIndex);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        updateReadingProgress();
+        saveStatePatch({ activeTab: validIndex });
+      }
+
+      function updateFooterNavButtons(index) {
+        const hasPrev = index > 0;
+        const hasNext = index < secs.length - 1;
+
+        btnPrev.disabled = !hasPrev;
+        btnNext.disabled = !hasNext;
+
+        if (hasPrev) {
+          const prevTitle = secs[index - 1].dataset.t || 'Anterior';
+          btnPrev.textContent = '⬅ Anterior: ' + prevTitle;
+        } else {
+          btnPrev.textContent = '⬅ Inicio del Tutorial';
+        }
+
+        if (hasNext) {
+          const nextTitle = secs[index + 1].dataset.t || 'Siguiente';
+          btnNext.textContent = 'Siguiente: ' + nextTitle + ' ➡';
+        } else {
+          btnNext.textContent = 'Fin del Tutorial ✔';
+        }
+
+        tabCounter.textContent = (index + 1) + ' / ' + secs.length;
+      }
+
+      function buildIndexDrawer() {
+        secs.forEach(function (s, i) {
+          const a = document.createElement('a');
+          const sectionTitle = s.dataset.t || (s.querySelector('h2') ? s.querySelector('h2').textContent : 'Sección');
+          a.textContent = (i ? i + '. ' : '') + sectionTitle;
+          a.setAttribute('tabindex', '0');
+          a.onclick = function () {
+            go(i);
+            tg(false);
+          };
+          a.onkeydown = function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              go(i);
+              tg(false);
+            }
+          };
+          dr.appendChild(a);
+        });
+
+        mb.onclick = function () {
+          tg();
+        };
+
+        window.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') tg(false);
+        });
+
+        document.addEventListener('click', function (e) {
+          if (!e.target.closest('#dr,#mb,#ix')) tg(false);
+        });
+
+        const homeIndexBtn = document.querySelector('#ix');
+        if (homeIndexBtn) {
+          homeIndexBtn.onclick = function () {
+            tg(true);
+          };
+        }
+      }
+
+      /* ==========================================================================
+         4. BOTONES FLOTANTES ARRASTRABLES (INICIO Y ARRIBA)
+         ========================================================================== */
+      function makeButtonDraggable(buttonEl, onClickAction, storagePosKey) {
+        if (!buttonEl) return;
+
+        let isDragging = false;
+        let hasMoved = false;
+        let startX = 0;
+        let startY = 0;
+        let initialLeft = 0;
+        let initialTop = 0;
+
+        const savedState = loadSavedState();
+        if (savedState[storagePosKey]) {
+          const pos = savedState[storagePosKey];
+          buttonEl.style.left = Math.min(window.innerWidth - 95, Math.max(4, pos.left)) + 'px';
+          buttonEl.style.top = Math.min(window.innerHeight - 54, Math.max(64, pos.top)) + 'px';
+          buttonEl.style.right = 'auto';
+          buttonEl.style.bottom = 'auto';
+        }
+
+        buttonEl.addEventListener('pointerdown', function (e) {
+          isDragging = true;
+          hasMoved = false;
+          startX = e.clientX;
+          startY = e.clientY;
+          const rect = buttonEl.getBoundingClientRect();
+          initialLeft = rect.left;
+          initialTop = rect.top;
+          buttonEl.setPointerCapture(e.pointerId);
+        });
+
+        buttonEl.addEventListener('pointermove', function (e) {
+          if (!isDragging) return;
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+          if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+            hasMoved = true;
+          }
+          if (!hasMoved) return;
+
+          const maxLeft = window.innerWidth - buttonEl.offsetWidth - 4;
+          const maxTop = window.innerHeight - buttonEl.offsetHeight - 4;
+          const newLeft = Math.max(4, Math.min(maxLeft, initialLeft + dx));
+          const newTop = Math.max(62, Math.min(maxTop, initialTop + dy));
+
+          buttonEl.style.left = newLeft + 'px';
+          buttonEl.style.top = newTop + 'px';
+          buttonEl.style.right = 'auto';
+          buttonEl.style.bottom = 'auto';
+        });
+
+        buttonEl.addEventListener('pointerup', function (e) {
+          if (!isDragging) return;
+          isDragging = false;
+          buttonEl.releasePointerCapture(e.pointerId);
+
+          if (hasMoved) {
+            const rect = buttonEl.getBoundingClientRect();
+            const patch = {};
+            patch[storagePosKey] = { left: Math.round(rect.left), top: Math.round(rect.top) };
+            saveStatePatch(patch);
+          } else {
+            onClickAction();
+          }
+        });
+      }
+
+      /* ==========================================================================
+         5. BOTONES COPIAR CON ALTERNATIVA DE RESPALDO
+         ========================================================================== */
+      function copyTextWithFallback(textToCopy, triggerBtn) {
+        const originalLabel = triggerBtn.textContent;
+
+        function showSuccess() {
+          triggerBtn.textContent = '✓ ¡COPIADO!';
+          setTimeout(function () {
+            triggerBtn.textContent = originalLabel;
+          }, 1800);
+        }
+
+        function fallbackCopy() {
+          try {
+            const area = document.createElement('textarea');
+            area.value = textToCopy;
+            area.style.position = 'fixed';
+            area.style.left = '-9999px';
+            document.body.appendChild(area);
+            area.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(area);
+            if (ok) {
+              showSuccess();
+            } else {
+              window.prompt('Copia manualmente el siguiente texto con Ctrl+C:', textToCopy);
+            }
+          } catch (_err) {
+            window.prompt('Copia manualmente el siguiente texto con Ctrl+C:', textToCopy);
+          }
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(textToCopy).then(showSuccess).catch(fallbackCopy);
+        } else {
+          fallbackCopy();
+        }
+      }
+
+      function setupCopyButtons() {
+        document.querySelectorAll('.btn-copy').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const explicitText = btn.getAttribute('data-copy-text');
+            if (explicitText) {
+              copyTextWithFallback(explicitText, btn);
+              return;
+            }
+            const block = btn.closest('.copy-block');
+            const pre = block ? block.querySelector('.copy-content') : null;
+            if (pre) {
+              copyTextWithFallback(pre.textContent, btn);
+            }
+          });
+        });
+      }
+
+      /* ==========================================================================
+         6. BUSCADOR INTERNO, PREFERENCIAS, PROGRESO E IMPRESIÓN A4
+         ========================================================================== */
+      function executeSearch() {
+        const input = document.getElementById('global-search');
+        const banner = document.getElementById('search-results-banner');
+        const query = (input.value || '').trim().toLowerCase();
+
+        if (!query) {
+          banner.style.display = 'none';
+          banner.innerHTML = '';
+          return;
+        }
+
+        const matches = [];
+        secs.forEach(function (sec, idx) {
+          const text = sec.textContent.toLowerCase();
+          if (text.includes(query)) {
+            matches.push({ index: idx, title: sec.dataset.t || ('Pestaña ' + idx) });
+          }
+        });
+
+        banner.style.display = 'block';
+        if (matches.length === 0) {
+          banner.innerHTML = '<div class="card" style="padding:10px 14px;border-color:var(--accent-rose);">No se encontraron coincidencias para <strong>"' +
+            query.replace(/[<>&"]/g, '') + '"</strong>. <button type="button" class="btn-tool" id="btn-clear-search" style="margin-left:8px;">Cerrar</button></div>';
+        } else {
+          const buttonsHtml = matches.map(function (m) {
+            return '<button type="button" class="chip" data-search-jump="' + m.index + '" style="margin:4px;">Ir a: ' + m.title + '</button>';
+          }).join('');
+          banner.innerHTML = '<div class="card" style="padding:10px 14px;"><strong>Resultados encontrados en ' + matches.length + ' pestaña(s):</strong><div style="margin-top:6px;">' +
+            buttonsHtml + ' <button type="button" class="btn-tool" id="btn-clear-search">Limpiar búsqueda</button></div></div>';
+        }
+
+        banner.querySelectorAll('[data-search-jump]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            go(Number(b.getAttribute('data-search-jump')));
+          });
+        });
+
+        const clearBtn = document.getElementById('btn-clear-search');
+        if (clearBtn) {
+          clearBtn.addEventListener('click', function () {
+            input.value = '';
+            banner.style.display = 'none';
+          });
+        }
+      }
+
+      function updateReadingProgress() {
+        const bar = document.getElementById('reading-progress');
+        if (!bar) return;
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        const docHeight = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+        const scrollPercent = Math.min(100, Math.max(0, (scrollTop / docHeight) * 100));
+        const tabWeight = ((currentTabIndex + 1) / secs.length) * 100;
+        bar.style.width = Math.max(scrollPercent, tabWeight * 0.35) + '%';
+      }
+
+      function handlePrintPreparation() {
+        mountSvgInstance('svg-mount-home', 'hero_home');
+        mountSvgInstance('svg-mount-credits', 'hero_credits');
+
+        const closedDetails = [];
+        document.querySelectorAll('details').forEach(function (det) {
+          if (!det.open) {
+            closedDetails.push(det);
+            det.open = true;
+          }
+        });
+
+        try {
+          window.print();
+        } catch (_err) {
+          window.alert('Abre este archivo directamente en el navegador y utiliza Ctrl+P o Cmd+P');
+        } finally {
+          setTimeout(function () {
+            closedDetails.forEach(function (det) {
+              det.open = false;
+            });
+          }, 600);
+        }
+      }
+
+      /* ==========================================================================
+         7. INICIALIZACIÓN PRINCIPAL
+         ========================================================================== */
+      function initApp() {
+        initializeSvgTemplate();
+        buildIndexDrawer();
+        setupCopyButtons();
+
+        chips.forEach(function (chip) {
+          chip.addEventListener('click', function () {
+            go(Number(chip.getAttribute('data-tab')));
+          });
+        });
+
+        btnPrev.addEventListener('click', function () {
+          if (currentTabIndex > 0) go(currentTabIndex - 1);
+        });
+
+        btnNext.addEventListener('click', function () {
+          if (currentTabIndex < secs.length - 1) go(currentTabIndex + 1);
+        });
+
+        document.querySelectorAll('.btn-toggle-svg-anim').forEach(function (btn) {
+          btn.addEventListener('click', toggleSvgAnimationState);
+        });
+
+        /* Botones flotantes arrastrables: INICIO y ARRIBA */
+        makeButtonDraggable(document.getElementById('float-home'), function () {
+          go(0);
+        }, 'floatHomePos');
+
+        makeButtonDraggable(document.getElementById('float-top'), function () {
+          const activeSec = secs[currentTabIndex];
+          if (activeSec) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }, 'floatTopPos');
+
+        /* Controles de Q&A */
+        const btnExpandQa = document.getElementById('btn-expand-all-qa');
+        const btnCollapseQa = document.getElementById('btn-collapse-all-qa');
+        if (btnExpandQa && btnCollapseQa) {
+          btnExpandQa.addEventListener('click', function () {
+            document.querySelectorAll('details.qa-item').forEach(function (d) { d.open = true; });
+          });
+          btnCollapseQa.addEventListener('click', function () {
+            document.querySelectorAll('details.qa-item').forEach(function (d) { d.open = false; });
+          });
+        }
+
+        /* Buscador */
+        document.getElementById('btn-search-go').addEventListener('click', executeSearch);
+        document.getElementById('global-search').addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') executeSearch();
+        });
+
+        /* Tamaño de fuente y tema */
+        const saved = loadSavedState();
+        let fontScale = saved.fontScale || 1;
+        document.documentElement.style.setProperty('--font-scale', String(fontScale));
+
+        if (saved.theme) {
+          document.documentElement.setAttribute('data-theme', saved.theme);
+        }
+
+        document.getElementById('btn-font-dec').addEventListener('click', function () {
+          fontScale = Math.max(0.85, Number((fontScale - 0.08).toFixed(2)));
+          document.documentElement.style.setProperty('--font-scale', String(fontScale));
+          saveStatePatch({ fontScale: fontScale });
+        });
+
+        document.getElementById('btn-font-inc').addEventListener('click', function () {
+          fontScale = Math.min(1.3, Number((fontScale + 0.08).toFixed(2)));
+          document.documentElement.style.setProperty('--font-scale', String(fontScale));
+          saveStatePatch({ fontScale: fontScale });
+        });
+
+        document.getElementById('btn-theme-toggle').addEventListener('click', function () {
+          const currentTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', currentTheme);
+          saveStatePatch({ theme: currentTheme });
+        });
+
+        /* Impresión y eventos nativos beforeprint */
+        document.getElementById('btn-print-pdf').addEventListener('click', handlePrintPreparation);
+        window.addEventListener('beforeprint', function () {
+          mountSvgInstance('svg-mount-home', 'hero_home');
+          mountSvgInstance('svg-mount-credits', 'hero_credits');
+        });
+
+        /* Checklists persistentes */
+        const checksState = saved.checks || {};
+        document.querySelectorAll('input[type="checkbox"][data-check]').forEach(function (box) {
+          const key = box.getAttribute('data-check');
+          box.checked = Boolean(checksState[key]);
+          box.addEventListener('change', function () {
+            const currentChecks = loadSavedState().checks || {};
+            currentChecks[key] = box.checked;
+            saveStatePatch({ checks: currentChecks });
+          });
+        });
+
+        window.addEventListener('scroll', updateReadingProgress, { passive: true });
+
+        /* Reparador periódico de contenedores SVG visibles */
+        setInterval(ensureVisibleSvgsMounted, 2500);
+
+        /* Montar pestaña inicial (guardada o INICIO) */
+        const initialTab = typeof saved.activeTab === 'number' ? saved.activeTab : 0;
+        go(initialTab);
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
+      } else {
+        initApp();
+      }
+    })();
+  </script>
+</body>
+</html>
